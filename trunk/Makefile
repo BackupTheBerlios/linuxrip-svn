@@ -13,6 +13,7 @@ compile:
 
 install:
 	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/lib/"
+	$(INSTALL) -d "$(DESTDIR)$(PREFIX)/lib/linuxrip"
 	$(INSTALL) -m 755 anser "$(DESTDIR)$(PREFIX)/lib/linuxrip/"
 	$(INSTALL) -m 755 createnfo "$(DESTDIR)$(PREFIX)/bin/"
 	$(INSTALL) -m 755 detecttracks "$(DESTDIR)$(PREFIX)/lib/linuxrip/"
