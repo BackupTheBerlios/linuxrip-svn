@@ -46,19 +46,16 @@ logversion='0.05'
 ### Base configuration, this needs to be set properly
 
 ## cdrom device location
-device[1]='/dev/hdb'
-device[2]='/dev/hda'
+device[1]='/dev/cdrom'
 
 ## device id, only needed for cue sheet creation, use "cdrdao scanbus" for info
-deviceid[1]='ATA:0,1,0'
-deviceid[2]='ATA:0,0,0'
+deviceid[1]='ATA:0,0,0'
 
 ## drivename, will only be put in nfo and xml file, array
-drivename[1]='Lite-On LTR-52327S'
-drivename[2]='Benq DW1620'
+drivename[1]='Enter drivename here'
 
 ## rippath
-rippath='/storage/tempstorage/riptemp'
+rippath='/dev/null'
 
 ### Optional configuration, recommended to look at
 
@@ -97,7 +94,7 @@ generatecuefile='1'
 encodeflac='1'
 
 ## reference flac encoder options
-flacoptions='-V -6'
+flacoptions='-V -7'
 
 ## flake flac encoder options
 flakeoptions='-10'
@@ -106,7 +103,7 @@ flakeoptions='-10'
 flakeverify='1'
 
 ## flac encoder, 'flac' and 'flake' are the choices
-flacencoder='flake'
+flacencoder='flac'
 
 ## encode wavpack, 0 = no, 1 = yes
 encodewavpack='0'
@@ -189,21 +186,14 @@ keeplogslossy='1'
 
 ### Expert configuration
 
-## script folder (automaticly determined from the current folder if autodetect, but this is the override)
-scriptpath='autodetect'
-# scriptpath='/storage/tempstorage/test/newscript'
-
 ## set the drive read offset here, array
-driveoffset[1]='6'
-driveoffset[2]='618'
+driveoffset[1]='0'
 
 ## cdparanoia options, array
 cdparanoiaoptions[1]="-X -z -O ${driveoffset[1]} -d ${device[1]}"
-cdparanoiaoptions[2]="-X -z -T -O ${driveoffset[2]} -d ${device[2]}"
 
 ## cdda2wav options, array
 cdda2wavoptions[1]="--paranoia --paraopts retries=999 -o ${driveoffset[1]} -D ${device[1]}"
-cdda2wavoptions[2]="--paranoia --paraopts retries=999 -o ${driveoffset[2]} -D ${device[2]}"
 
 ## some cd's have destructive copy protections, such as cds200, most drives are (probably) not capable of a 100% rip, be sure to listen very carefully to rips with this setting turned on
 allowmismatchingmd5s='0'
@@ -227,11 +217,6 @@ then
 	exit
 fi
 
-if [ ${scriptpath} == 'autodetect' ]
-then
-	scriptpath=($(pwd))
-fi
-
 if [ ${noprocess} == '1' ]; then
 	noprocess="--noprocess"
 elif [ ${noprocess} == '0' ]; then
@@ -252,10 +237,8 @@ fi
 
 # define some paths
 
-#configpath='/etc/linuxrip'
-configpath="${scriptpath}"
-#binpath='/usr/lib/linuxrip'
-binpath="${scriptpath}"
+configpath='/etc/linuxrip'
+binpath='/usr/lib/linuxrip'
 
 # import settings
 source "${configpath}/settings"
