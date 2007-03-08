@@ -1,0 +1,1685 @@
+# !/bin/sh
+#
+# Linuxrip, a frontend to several applications, such as cdparanoia.
+# Copyright (C) 2006 madman2003(madman2003@gmail.com) and axion(axion@37.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# Requirements:
+# cdparanoia
+# cd-discid
+# nano (or another texteditor, if you change the texteditor variable)
+# wget
+# bc
+#
+# Optional requirements: (you'll need at least one set of encoder and replaygain tool)
+# cdda2wav
+# flac
+# metaflac
+# flake
+# mppenc
+# replaygain
+# wavpack
+# wvgain
+# oggenc
+# vorbisgain
+# vorbiscomment
+# cdspeed
+# cdrdao (needed for cue sheets)
+# 
+
+linuxripversion='0.095'
+logversion='0.05'
+
+### Base configuration, this needs to be set properly
+
+## cdrom device location
+device[1]='/dev/hdb'
+device[2]='/dev/hda'
+
+## device id, only needed for cue sheet creation, use "cdrdao scanbus" for info
+deviceid[1]='ATA:0,1,0'
+deviceid[2]='ATA:0,0,0'
+
+## drivename, will only be put in nfo and xml file, array
+drivename[1]='Lite-On LTR-52327S'
+drivename[2]='Benq DW1620'
+
+## rippath
+rippath='/storage/tempstorage/riptemp'
+
+### Optional configuration, recommended to look at
+
+## text editor command
+texteditor='nano'
+
+## maximum amount of rip attempts before giving up
+defaultries='10'
+
+## freedb server
+cddbserver='freedb2.org'
+
+## freedb user
+cddbuser='linuxrip'
+
+## FreeDB email address
+cddbemail='localhost@localhost'
+
+## cddb port number
+cddbport='8880'
+
+## interactive mode, 0 = no, 1 = yes
+interactive='1'
+
+## rip single file flac
+ripsinglefile='0'
+
+## toc read options, add --fast-toc to skip pregap detection
+readtocoptions=""
+#readtocoptions="--fast-toc"
+
+## generate cue, only for flac atm
+generatecuefile='1'
+
+## encode flac, 0 = no, 1 = yes
+encodeflac='1'
+
+## reference flac encoder options
+flacoptions='-V -6'
+
+## flake flac encoder options
+flakeoptions='-10'
+
+## flake doesn't verify on it's own, so flac -t can be used for that
+flakeverify='1'
+
+## flac encoder, 'flac' and 'flake' are the choices
+flacencoder='flake'
+
+## encode wavpack, 0 = no, 1 = yes
+encodewavpack='0'
+
+## wavpack encode options
+wavpackoptions=''
+
+## encode mpc, 0 = no, 1 = yes
+encodempc='0'
+
+## mpc encode options
+mpcoptions='--quality 8'
+
+## encode ogg vorbis, 0 = no, 1 = yes
+encodevorbis='0'
+
+## ogg vorbis encode options
+vorbisoptions='-q 8'
+
+## encode mp3, i had better not catch you using this for storage purposes :-)
+encodemp3='0'
+
+## mp3 encode options
+lameoptions='-V 2 --vbr-new'
+
+## ripper, either cdparanoia or cdda2wav
+ripper[1]='cdparanoia'
+ripper[2]='cdda2wav'
+
+## remove wav files, 0 =no, 1 = yes 
+removewavs='1'
+
+## folder template
+setfoldertemplate='3'
+
+## file template
+setfiletemplate='3'
+
+## filetemplate 2: when exceeding 60 character base(xml file for example) filename(excluding extensions), it will switch to just "albumname.extension"
+maxfilenamecharacters='60'
+
+## file tag
+filetag='anon'
+
+## create nfo
+createnfo='1'
+
+## add drivename to nfo and xml logfile, set drivename below
+adddrivename='1'
+
+## add rippername to nfo, use 'none' if it should not be added
+rippername='none'
+
+## track names (and other things) start with capital letters, even if cddb gives a small letter. 1=capital letter, 0=no capital letter.
+capitalletter='1'
+
+## noprocess means the tags will not be changed in any way
+noprocess='0'
+
+## use cdparanoia instead of cd-discid to determine amount of tracks (cdparanoia ignores data tracks), 1=yes, 0=no
+## note: with this option on the question if the amount of tracks is right will default to yes instead of having no default.
+improvedtrackdetect='1'
+
+## verbose ripping output
+verbose='0'
+
+## use cdspeed to set maximum drive speed
+cdspeed='1'
+maximumspeed='15'
+
+## embed log into flac and/or vorbis files
+embedlog='1'
+
+## keep logs, i sinserely recommend keeping the logs for any storage files
+keeplogslossless='1'
+keeplogslossy='1'
+
+## postrip commands excecuted from the rip folder, please use 'quotes', so the commands are not interpreted atm
+#postripcommand[1]='ls -a'
+
+### Expert configuration
+
+## script folder (automaticly determined from the current folder if autodetect, but this is the override)
+scriptpath='autodetect'
+# scriptpath='/storage/tempstorage/test/newscript'
+
+## set the drive read offset here, array
+driveoffset[1]='6'
+driveoffset[2]='618'
+
+## cdparanoia options, array
+cdparanoiaoptions[1]="-X -z -O ${driveoffset[1]} -d ${device[1]}"
+cdparanoiaoptions[2]="-X -z -T -O ${driveoffset[2]} -d ${device[2]}"
+
+## cdda2wav options, array
+cdda2wavoptions[1]="--paranoia --paraopts retries=999 -o ${driveoffset[1]} -D ${device[1]}"
+cdda2wavoptions[2]="--paranoia --paraopts retries=999 -o ${driveoffset[2]} -D ${device[2]}"
+
+## some cd's have destructive copy protections, such as cds200, most drives are (probably) not capable of a 100% rip, be sure to listen very carefully to rips with this setting turned on
+allowmismatchingmd5s='0'
+
+## manually edit info send from the cddb server, in case something is messed up a bit and rewriting costs a lot of time, only works for track names
+manuallyeditcddbinfo='0'
+
+## create rips that are in line with the goals of the rex-guide (http://rex-guide.de.vu), rex guide only specifies exact audio copy atm
+rex='1'
+
+## leo stands for Lossless Exact Original and should only be turned when ripping original cd's and rex switch is on
+## this switch only affects a (possible) tag in the log and in the foldername
+leo='1'
+
+### End configuration
+
+if [ $1 = '--help' ] &> /dev/null
+then
+	echo "linuxrip version: ${linuxripversion}"
+	echo '--help'
+	exit
+fi
+
+if [ ${scriptpath} == 'autodetect' ]
+then
+	scriptpath=($(pwd))
+fi
+
+if [ ${noprocess} == '1' ]; then
+	noprocess="--noprocess"
+elif [ ${noprocess} == '0' ]; then
+	noprocess="--process"
+else
+	echo "Noprocess settings is incorrect, please correct"
+	exit
+fi
+
+if [ ${capitalletter} == '1' ]; then
+	capitalletter="--capital"
+elif [ ${capitalletter} == '0' ]; then
+	capitalletter="--nocapital"
+else
+	echo "Capitalletter settings is incorrect, please correct"
+	exit
+fi
+
+# define some paths
+
+#configpath='/etc/linuxrip'
+configpath="${scriptpath}"
+#binpath='/usr/lib/linuxrip'
+binpath="${scriptpath}"
+
+# import settings
+source "${configpath}/settings"
+
+# remove this, since it will cause problems if you "killed" the previous linuxrip session
+rm '/tmp/linuxrip.encodelock' &>/dev/null
+
+attempts=0
+if [ "${limit}" == "" ]
+then
+	limit=${defaultries}
+fi
+
+if (( "${defaultries}" < '2' ))
+then
+	echo "Minimum tries is 2, please change setting accordingly."
+	exit
+fi
+
+rexcheck () {
+
+if [ ${rex} = '1' ]
+then
+	if [ ${allowmismatchingmd5s} = '1' ]
+	then
+		echo ""
+		echo "Allow mismatching md5's is not a valid setting for a rip that is in rex compatible in the sense of goals."
+		echo ""
+		exit
+	fi
+	for (( p=1 ; p < ${#device[@]} ; p++ ))
+	do
+		cdparanoiaoptionsok=$(echo "${cdparanoiaoptions[${p}]}" | grep "\-X \-z")
+		cdparanoiaoptionsok2=$(echo "${cdparanoiaoptions[${p}]}" | grep "\-Z")
+		cdparanoiaoptionsok3=$(echo "${cdparanoiaoptions[${p}]}" | grep "\-Y")
+		if [ "${cdparanoiaoptionsok}" = "" ]
+		then
+			echo ""
+			echo "A rex rip requires the '-X -z' switches for cdparanoia (Drive ${p})."
+			echo ""
+			exit
+		fi
+		if [[ "${cdparanoiaoptionsok2}" != "" || "${cdparanoiaoptionsok3}" != "" ]]
+		then
+			echo ""
+			echo "A rex rip doesn't allow the -Z or the -Y switch (Drive ${p}).."
+			echo ""
+			exit
+		fi
+		cdda2wavoptionsok=$(echo "${cdda2wavoptions[${p}]}" | grep "\-\-paranoia \-\-paraopts retries=999")
+		cdda2wavoptionsok2=$(echo "${cdda2wavoptions[${p}]}" | grep "\-\-paraopts disable")
+		cdda2wavoptionsok3=$(echo "${cdda2wavoptions[${p}]}" | grep "\-\-paraopts no-verify")
+		if [ "${cdda2wavoptionsok}" = "" ]
+		then
+			echo ""
+			echo "A rex rip requires the '--paranoia --paraopts retries=999' switches for cdda2wav (Drive ${p})."
+			echo ""
+			exit
+		fi
+		if [[ "${cdda2wavoptionsok2}" != "" || "${cdda2wavoptionsok3}" != "" ]]
+		then
+			echo ""
+			echo "A rex rip does not allow the switches '--paraopts disable' or '--paraopts no-verify' for cdda2wav (Drive ${p})."
+			echo ""
+			exit
+		fi
+	done
+	if [ ${ripper} = 'cdda2wav' ]
+	then
+		echo ""
+		echo "If possible consider using cdparanoia for rex rips."
+		echo ""
+	fi
+fi
+
+}
+
+choosedrive () {
+	numberofdrives="${#device[@]}"
+	echo "Select drive: (default is 1)"
+	for (( o=1 ; $o <= ${numberofdrives} ; o++ ))
+	do
+		echo "${o}: ${drivename[${o}]} (${device[${o}]})"
+	done
+	read drivenumber &> /dev/null
+	if [[ ${drivenumber} == '' ]]
+	then
+		drivenumber='1'
+	fi
+	device="${device[${drivenumber}]}"
+	deviceid="${deviceid[${drivenumber}]}"
+	drivename="${drivename[${drivenumber}]}"
+	cdparanoiaoptions="${cdparanoiaoptions[${drivenumber}]}"
+	cdda2wavoptions="${cdda2wavoptions[${drivenumber}]}"
+	if [[ ${cdspeed} == '1' ]]
+	then
+		cdspeed -d "${device}" -s "${maximumspeed}"
+	fi
+}
+
+# for convient use in the case of certain repetetive functions
+makecodeclist () {
+	numberofcodecs=5;
+	if [ ${encodeflac} = '1' ]; then
+		codeclist[1]="flac"
+	fi
+	if [ ${encodempc} = '1' ]; then
+		codeclist[2]="mpc"
+	fi
+	if [ ${encodewavpack} = '1' ]; then
+		codeclist[3]="wavpack"
+	fi
+	if [ ${encodevorbis} = '1' ]; then
+		codeclist[4]="vorbis"
+	fi
+	if [ ${encodemp3} = '1' ]; then
+		codeclist[5]="mp3"
+	fi
+}
+
+chooseripper () {
+	numberofrippers="${#ripper[@]}"
+	echo "Select ripper: (default is 1)"
+	for (( q=1 ; $q <= ${numberofrippers} ; q++ ))
+	do
+		echo "${q}: ${ripper[${q}]}"
+	done
+	rippernumber='1'
+	read rippernumber &> /dev/null
+	if [[ ${rippernumber} == '' ]]
+	then
+		rippernumber='1'
+	fi
+	ripper="${ripper[${rippernumber}]}"
+}
+
+fail () {
+	echo "Track ${tracknum}: Failed - Linuxrip attempted to rip this track ${attempt}/${limit} times and failed."
+        exit
+}
+
+doreplaygain () {
+	printf "\nReplaygaining files ...\n"
+	if [ ${encodeflac} = '1' ]; then
+		cd "${rippath[1]}"
+		metaflac --add-replay-gain "${flacfiles[@]}" > /dev/null
+		cd "${rippath}"
+	fi
+	if [ ${encodempc} = '1' ]; then
+		cd "${rippath[2]}"
+		replaygain --auto "${mpcfiles[@]}" &> /dev/null
+		cd "${rippath}"
+	fi
+	if [ ${encodewavpack} = '1' ]; then
+		cd "${rippath[3]}"
+		wvgain -a "${wavpackfiles[@]}" &> /dev/null
+		cd "${rippath}"
+	fi
+	if [ ${encodevorbis} = '1' ]; then
+		cd "${rippath[4]}"
+		vorbisgain -a "${vorbisfiles[@]}" &> /dev/null
+		cd "${rippath}"
+	fi
+	if [ ${encodemp3} = '1' ]; then
+		cd "${rippath[5]}"
+		mp3gain -a "${mp3files[@]}" &> /dev/null
+		cd "${rippath}"
+	fi
+}
+
+log_header () {
+	xmlfilename="${generalfilename}.xml"
+	xmlfilelocation="${rippath}/${xmlfilename}"
+	${binpath}/xmlwriter '--create' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--addsub' 'linuxrip' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--emptyline' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'linuxripversion' "${linuxripversion}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'logversion' "${logversion}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--emptyline' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--addsub' 'albuminfo' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'artist' "${artist}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'album' "${album}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'genre' "${genre}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'year' "${year}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--closesub' 'albuminfo' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--emptyline' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--addsub' 'settings' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'ripper' "${ripper}" "${xmlfilelocation}"
+	if [ ${ripper} = 'cdparanoia' ]
+	then
+		${binpath}/xmlwriter '--add' 'ripperoptions' "${cdparanoiaoptions}" "${xmlfilelocation}"
+	fi
+	if [ ${ripper} = 'cdda2wav' ]
+	then
+		${binpath}/xmlwriter '--add' 'ripperoptions' "${cdda2wavoptions}" "${xmlfilelocation}"
+	fi
+	if [ ${encodeflac} = '1' ]
+	then
+		${binpath}/xmlwriter '--add' 'encodeflac' "${encodeflac}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--add' 'flacencoder' "${flacencoder}" "${xmlfilelocation}"
+		if [ ${flacencoder} = 'flac' ]; then
+			${binpath}/xmlwriter '--add' 'flacoptions' "${flacoptions}" "${xmlfilelocation}"
+		elif [ ${flacencoder} = 'flake' ]; then
+			${binpath}/xmlwriter '--add' 'flakeoptions' "${flakeoptions}" "${xmlfilelocation}"
+		else
+			echo "Invalid flac encoder chosen."
+			exit
+		fi
+		${binpath}/xmlwriter '--add' 'singleflac_cue' "${ripsinglefile}" "${xmlfilelocation}"
+	fi
+	if [ ${encodempc} = '1' ]
+	then
+		${binpath}/xmlwriter '--add' 'encodempc' "${encodempc}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--add' 'mpcoptions' "${mpcoptions}" "${xmlfilelocation}"
+	fi
+	if [ ${encodewavpack} = '1' ]
+	then
+		${binpath}/xmlwriter '--add' 'encodewavpack' "${encodewavpack}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--add' 'wavpackoptions' "${wavpackoptions}" "${xmlfilelocation}"
+	fi
+	if [ ${encodevorbis} = '1' ]
+	then
+		${binpath}/xmlwriter '--add' 'encodevorbis' "${encodevorbis}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--add' 'vorbisoptions' "${vorbisoptions}" "${xmlfilelocation}"
+	fi
+	if [ ${encodemp3} = '1' ]
+	then
+		${binpath}/xmlwriter '--add' 'encodemp3' "${encodemp3}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--add' 'lameoptions' "${lameoptions}" "${xmlfilelocation}"
+	fi
+	if [ ${adddrivename} = '1' ]
+	then
+		${binpath}/xmlwriter '--add' 'drive' "${drivename}" "${xmlfilelocation}"
+	fi
+	${binpath}/xmlwriter '--add' 'maxattempts' "${limit}" "${xmlfilelocation}"
+	${binpath}/xmlwriter '--add' 'rex' "${rex}" "${xmlfilelocation}"
+	if [[ ${encodeflac} = '1' || ${encodewavpack} = '1' ]]
+	then
+		${binpath}/xmlwriter '--add' 'leo' "${leo}" "${xmlfilelocation}"
+	fi
+	${binpath}/xmlwriter '--closesub' 'settings' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--emptyline' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--addsub' 'tracks' "${xmlfilelocation}"
+}
+
+log_footer () {
+	${binpath}/xmlwriter '--emptyline' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--closesub' 'tracks' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--emptyline' "${xmlfilelocation}"
+	${binpath}/xmlwriter '--closesub' 'linuxrip' "${xmlfilelocation}"
+}
+
+# output is sent to dev null when the verbose flag is !=1
+ripattempt () {
+	if [ ${verbose} = '1' ]
+	then
+		if [ ${ripper} = 'cdparanoia' ]
+		then
+			cdparanoia ${cdparanoiaoptions} ${tracknumbertag} "${filename}".attempt${attempt}.wav 
+			ripattempt[${attempt}]=`md5sum "${rippath}/${filename}.attempt${attempt}.wav" | cut -d ' ' -f 1`
+			echo "OK (${ripattempt[attempt]})"
+		elif [ ${ripper} = 'cdda2wav' ]
+		then
+			cdda2wav ${cdda2wavoptions} "track=${tracknumbertag}" "${filename}.attempt${attempt}.wav"
+			ripattempt[${attempt}]=`md5sum "${rippath}/${filename}.attempt${attempt}.wav" | cut -d ' ' -f 1`
+			echo "OK (${ripattempt[attempt]})"
+		else
+			echo 'Invalid ripper chosen'
+		fi
+	else
+		if [ ${ripper} = 'cdparanoia' ]
+		then
+			cdparanoia ${cdparanoiaoptions} ${tracknumbertag} "${filename}".attempt${attempt}.wav &> /dev/null
+			ripattempt[${attempt}]=`md5sum "${rippath}/${filename}.attempt${attempt}.wav" | cut -d ' ' -f 1`
+			echo "OK (${ripattempt[attempt]})"
+		elif [ ${ripper} = 'cdda2wav' ]
+		then
+			cdda2wav ${cdda2wavoptions} "track=${tracknumbertag}" "${filename}.attempt${attempt}.wav" &> /dev/null
+			ripattempt[${attempt}]=`md5sum "${rippath}/${filename}.attempt${attempt}.wav" | cut -d ' ' -f 1`
+			echo "OK (${ripattempt[attempt]})"
+		else
+			echo 'Invalid ripper chosen'
+		fi
+	fi
+}
+
+# arg1: track that needs to be encoded
+encode () {
+	# encoding happens seperately, so certain information must be time independent, hence the encodetrack variable
+	local encodetrack="${1}"
+	readyencoding[$encodetrack]='0'
+	printf "\nTrack ${tracknumbertag}: Success! Encoding track ...\n"
+	# ensure that encoding happens one at a time
+	while [[ $(cat '/tmp/linuxrip.encodelock' 2>/dev/null) == 'locked' ]]; do
+		sleep 5
+	done
+	printf 'locked' > '/tmp/linuxrip.encodelock'
+	if [ ${encodeflac} = '1' ]; then
+		# there are two flac encoders, the reference flac encoder and flake
+		if [ ${flacencoder} = 'flac' ]; then
+			flac ${flacoptions} "--tag=tracknumber=${tracknumbertag[$encodetrack]}" "--tag=artist=$(echo "${artist}")" "--tag=album=$(echo "${album}")" "--tag=title=$(echo "${tracks[$encodetrack]}")" "--tag=genre=$(echo "${genre}")" "--tag=date=$(echo "${year}")" "${rippath}/${filename}.attempt${succes[$encodetrack+1*1000]}.wav" -o "${rippath[1]}/${filename[$encodetrack]}.flac" 2>/dev/null
+		elif [ ${flacencoder} = 'flake' ]; then
+			flake ${flakeoptions} "${rippath}/${filename}.attempt${succes[$encodetrack+1*1000]}.wav" "${rippath[1]}/${filename[$encodetrack]}.flac" 2>/dev/null
+			metaflac --add-seekpoint 10s "--set-tag=tracknumber=${tracknumbertag[$encodetrack]}" "--set-tag=artist=$(echo "${artist}")" "--set-tag=album=$(echo "${album}")" "--set-tag=title=$(echo "${tracks[$encodetrack]}")" "--set-tag=genre=$(echo "${genre}")" "--set-tag=date=$(echo "${year}")" "${rippath[1]}/${filename[$encodetrack]}.flac" 2>/dev/null
+			if [ ${flakeverify} = '1' ]; then
+				flac -t "${rippath[1]}/${filename[$encodetrack]}.flac" 2>/dev/null
+			fi
+		else
+			echo 'Invalid flac encoder chosen'
+			exit
+		fi
+		
+		printf "${filename}.flac" > "/tmp/flac.${encodetrack}"
+	fi
+	if [ ${encodempc} = '1' ]; then
+		mppenc ${mpcoptions} --tag "track=${tracknumbertag[$encodetrack]}" --title "${tracks[$encodetrack]}" --tag "artist=${artist}" --tag "album=${album}" --tag "genre=${genre}" --tag "year=${year}" "${rippath}/${filename}.attempt${succes[$encodetrack+1*1000]}.wav" "${rippath[2]}/${filename[$encodetrack]}.mpc" 2>/dev/null
+		printf "${filename}.mpc" > "/tmp/musepack.${encodetrack}"
+	fi
+	if [ ${encodewavpack} = '1' ]; then
+		wavpack ${wavpackoptions} -m -w "track=${tracknumbertag[$encodetrack]}" -w "title=${tracks[$encodetrack]}" -w "artist=${artist}" -w "album=${album}" -w "genre=${genre}" -w "year=${year}" "${rippath}/${filename}.attempt${succes[$encodetrack+1*1000]}.wav" -o "${rippath[3]}/${filename[$encodetrack]}.wv" 2>/dev/null
+		printf "${filename}.wv" > "/tmp/wavpack.${encodetrack}"
+	fi
+	if [ ${encodevorbis} = '1' ]; then
+		oggenc ${vorbisoptions} -N "${tracknumbertag[$encodetrack]}" -t "${tracks[$encodetrack]}" -a "${artist}" -l "${album}" -G "${genre}" -d "${year}" -o "${rippath[4]}/${filename[$encodetrack]}.ogg" "${rippath}/${filename}.attempt${succes[$encodetrack+1*1000]}.wav" 2>/dev/null
+		printf "${filename}.ogg" > "/tmp/vorbis.${encodetrack}"
+	fi
+	if [ ${encodemp3} = '1' ]; then
+		lame ${lameoptions} --noreplaygain --add-id3v2 --pad-id3v2 --tn "${tracknumbertag[$encodetrack]}" --tt "${tracks[$encodetrack]}" --ta "${artist}" --tl "${album}" --tg "${mp3genre}" --ty "${year}" "${rippath}/${filename}.attempt${succes[$encodetrack+1*1000]}.wav" "${rippath[5]}/${filename[$encodetrack]}.mp3" &>/dev/null
+		printf "${filename}.mp3" > "/tmp/mp3.${encodetrack}"
+	fi
+	if [ ${removewavs} = '1' ]
+	then
+		removewav "${encodetrack}"
+	fi
+	rm '/tmp/linuxrip.encodelock' &> /dev/null
+	readyencoding[$encodetrack]='1'
+	# we will have to wait until the last track is encoded
+	if [ ${encodetrack} == ${numtracks} ]; then
+		postrip
+	fi
+}
+
+prerip () {
+	echo ""
+	echo "Ripping to ${rippath}"
+	echo ""
+	choosedrive
+	chooseripper
+	rexcheck
+	makecodeclist
+	retrievecdinfo
+	cddb
+	setgeneralfilename
+	if [ ${createnfo} = '1' ]
+	then
+		nfo
+	fi
+	verifynumberoftracks
+	log_header
+	gotofolder
+	
+	if [ ${encodeflac} = '1' ]; then
+		createfolderflac
+	fi
+	if [ ${encodempc} = '1' ]; then
+		createfoldermpc
+	fi
+	if [ ${encodewavpack} = '1' ]; then
+		createfolderwavpack
+	fi
+	if [ ${encodevorbis} = '1' ]; then
+		createfoldervorbis
+	fi
+	if [ ${encodemp3} = '1' ]; then
+		createfoldermp3
+	fi
+}
+
+rip () {
+	succes='0'
+	printf "\nTrack ${tracknumbertag}: ${title}\n"
+	
+	# when ripping a single file the tracknumber tag is not suitable as succes variable storage
+	if [ ${ripsinglefile} = '1' ]; then
+		succestag='1'
+	else
+		succestag="${tracknumbertag}"
+	fi
+	
+	while (( ${attempt} <= ${limit} && ${succes} != '1' ))
+	do
+		if (( ${attempt} > 2 ))
+		then
+			troublesome='1'
+		fi
+		ripattempt
+		# each md5 is checked against eachother if one matches and the two matching are labeled succes[1] and succes[2]
+		for (( j=1 ; $j <= ${attempt} ; j++ ))
+		do
+			for (( k=1 ; $k <= ${attempt} ; k++ ))
+			do
+				if [[ "${ripattempt[${j}]}" == "${ripattempt[${k}]}" && ${j} != ${k} ]]
+				then
+					succes='1'
+					succes[$succestag+1*1000]="${j}"
+					succes[$succestag+2*1000]="${k}"
+				fi
+			done
+		done
+		if [[ ${succes} != '1' ]]
+		then
+			let 'attempt += 1'
+		fi
+		if [ ${attempt} -ge ${limit} ]
+		then
+			if [ ${allowmismatchingmd5s} = '0' ]
+			then
+				fail
+			elif [ ${allowmismatchingmd5s} = '1' ]
+			then
+				succes='1'
+				failedmd5='1'
+			else
+				echo 'allowmismatchingmd5s setting is not properly configured'
+				exit
+			fi
+		fi
+	done
+	if [[ ${succes} = '1' ]]
+	then
+		${binpath}/xmlwriter '--addsubex' 'track' 'number' "${tracknumbertag}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--add' 'filename' "${filename}.wav" "${xmlfilelocation}"
+		for (( l=1 ; $l <= ${attempt} ; l++ ))
+		do
+			${binpath}/xmlwriter '--addex' 'md5' 'pass' "${l}" "${ripattempt[${l}]}" "${xmlfilelocation}"
+		done
+		${binpath}/xmlwriter '--add' 'attempts' "${attempt}" "${xmlfilelocation}"
+		${binpath}/xmlwriter '--closesub' 'track' "${xmlfilelocation}"
+		# the last track and a single file rip should not be disconnected from terminal
+		if [ ${ripsinglefile} == '1' ]; then
+			# [1-${numtracks}] is unuseable for arrays
+			encode "1"
+		elif [ ${tracknumbertag} != ${numtracks} ]; then
+			encode "${tracknumbertag}" &
+		else
+			encode "${tracknumbertag}"
+		fi
+	fi
+}
+
+postrip () {
+	ready='0'; firsttry='1'
+	#make sure encoding is done before progressing 
+	while [[ ${ready} == '0' ]]; do
+		ready='1'
+		for (( y=1; ${y}<=${numtracks}; y++)); do
+			if [[ ${readyencoding[$y]} == '0' ]]; then
+				echo 'Not ready yet'
+				ready='0'
+			fi
+		done
+		if [[ ${firsttry} != '1' ]]; then
+			sleep 20
+		fi
+		firsttry='0'
+	done
+	rebuildarray
+	doreplaygain
+	log_footer
+	if [ ${createnfo} = '1' ]; then
+		copynfo
+	fi
+	if [ ${embedlog} = '1' ]; then
+		embedextrainfo
+	fi
+	if [ ${ripsinglefile} = '1' ]; then
+		createcue
+	fi
+	if [[ ${encodeflac} == '1' && ${generatecuefile} == '1' && ${ripsinglefile} == '0' ]]; then
+		generatecue
+	fi
+	createmd5
+	createm3u
+	createfakelog
+	copylog
+	removefiles
+	dopostripcommands
+	warning
+	echo 'Ripping complete!'
+	exit
+}
+
+# threading had unfortunate side effect, the *files arrays stopped to function, so the filenames are now dumped into files (which are thread independent :-) ) and put into an array at the end
+rebuildarray () {
+	if [ ${encodeflac} == '1' ]; then
+		for (( z=1; $z <= ${numtracks}; z++ ))
+		do
+			flacfiles[$z]=$(cat "/tmp/flac.${z}")
+			rm "/tmp/flac.${z}"
+		done
+	fi
+	if [ ${encodempc} == '1' ]; then
+		for (( z=1; $z <= ${numtracks}; z++ ))
+		do
+			mpcfiles[$z]=$(cat "/tmp/musepack.${z}")
+			rm "/tmp/musepack.${z}"
+		done
+	fi
+	if [ ${encodewavpack} == '1' ]; then
+		for (( z=1; $z <= ${numtracks}; z++ ))
+		do
+			wavpackfiles[$z]=$(cat "/tmp/wavpack.${z}")
+			rm "/tmp/wavpack.${z}"
+		done
+	fi
+	if [ ${encodevorbis} == '1' ]; then
+		for (( z=1; $z <= ${numtracks}; z++ ))
+		do
+			vorbisfiles[$z]=$(cat "/tmp/vorbis.${z}")
+			rm "/tmp/vorbis.${z}"
+		done
+	fi
+	if [ ${encodemp3} == '1' ]; then
+		for (( z=1; $z <= ${numtracks}; z++ ))
+		do
+			mp3files[$z]=$(cat "/tmp/mp3.${z}")
+			rm "/tmp/mp3.${z}"
+		done
+	fi
+}
+
+# the output echo'd here will be used as folder template, you can create your own here
+foldertemplate () {
+	if [ ${setfoldertemplate} = '1' ]; then
+		if [[ ${leo} = '1' && ${rex} = '1' && ( ${codec} = 'flac' || ${codec} = 'wavpack' ) ]]
+		then
+			folder=$(echo "${artist}.${album}.${year}.${codec}.leo-${filetag}" | tr "' '" "." | tr ":" "\0" | tr "A-Z" "a-z" |  tr "/" "\0" |  tr '[=\\-]' "\0")
+			echo "${rippath}/${folder}"
+		else
+			folder=$(echo "${artist}.${album}.${year}.${codec}-${filetag}" | tr "' '" "." | tr ":" "\0" | tr "A-Z" "a-z" |  tr "/" "\0" |  tr '[=\\-]' "\0")
+			echo "${rippath}/${folder}"
+		fi
+	elif [ ${setfoldertemplate} = '2' ]; then
+		if [[ ${leo} = '1' && ${rex} = '1' && ( ${codec} = 'flac' || ${codec} = 'wavpack' ) ]]
+		then
+			folder=$(echo "${artist} (${year}) ${album} -${codec}" | tr "/" "\0" |  tr '[=\\-]' "\0")
+			echo "${rippath}/${folder} [LEO]"
+		else
+			folder=$(echo "${artist} (${year}) ${album} -${codec}" | tr "/" "\0" |  tr '[=\\-]' "\0")
+			echo "${rippath}/${folder}"
+		fi
+	# this folder template doesn't use leo tag
+	elif [ ${setfoldertemplate} = '3' ]; then
+			codectag=$(echo "${codec}" | tr "a-z" "A-Z")
+			folder=$(echo "${artist} - ${album} (${year})" | tr "/" "\0" |  tr '[=\\-]' "\0")
+			echo "${rippath}/${folder} [${codectag}]"
+	else
+		echo 'Invalid foldertemplate setting, please correct'
+		exit
+	fi
+}
+
+# the output echo'd here will be used as file template, you can create your own here
+filetemplate () {
+	if [ ${setfiletemplate} = '1' ]
+	then
+		echo "${tracknumber}_-_${artist}_-_${title}_-${filetag}" | tr "' '" "_" | tr ":" "\0" | tr "A-Z" "a-z" | tr "/" "_" |  tr '[=\\-]' "_"
+	elif [ ${setfiletemplate} = '2' ]
+	then
+		echo "${tracknumber} - ${title}" | tr "/" " " |  tr '[=\\-]' "_"
+	elif [ ${setfiletemplate} = '3' ]
+	then
+		echo "${tracknumber} - ${title}" | tr "/" " " |  tr '[=\\-]' "_"
+	else
+		echo 'Invalid filetemplate setting, please correct'
+		exit
+	fi
+}
+
+# general filename is used for md5, m3u, etc files
+setgeneralfilename () {
+	if [ ${setfiletemplate} = '1' ]
+	then
+		generalfilename=($(echo "00_-_${artist}_-_${album}_-${filetag}" | tr "' '" "_" | tr ":" "\0" | tr "A-Z" "a-z"))
+	elif [ ${setfiletemplate} = '2' ]
+	then
+		generalfilename=$(echo "${artist} (${year}) ${album}")
+		if (( "${#generalfilename}" > "${maxfilenamecharacters}" ))
+		then
+			generalfilename=$(echo "${album}")
+		fi
+	elif [ ${setfiletemplate} = '3' ]
+	then
+		generalfilename=$(echo "00 - ${artist} - ${album} (${year})")
+		if (( "${#generalfilename}" > "${maxfilenamecharacters}" ))
+		then
+			generalfilename=$(echo "00 - ${album}")
+		fi
+	else
+		echo 'Invalid file template setting'
+		exit
+	fi
+}
+
+retrievecdinfo () {
+	# find the disc ID from the album in the drive
+	fullid=`cd-discid ${device} 2>/dev/null`
+	if [[ $? != "0" ]] ; then
+		echo "Error: ${device} is not a CD drive that contains an album."
+		exit 1
+	fi
+}
+
+# main cddb function, spread out over multiple functions for convience
+cddb() {
+	cddbstage1
+	# if nmax exists, then multiple results are available
+	if [[ ${nmax} != '' ]]; then
+		# now it's time to let people choose which they want
+		choosecddbresult
+	else
+		retrievetrackinfo "1"
+	fi
+	cddbuserinput
+	if [ ${encodemp3} == '1' ]; then
+		fixmp3genre
+	fi
+}
+
+cddbstage1 () {
+	if [ ${improvedtrackdetect} = '1' ]
+	then
+		numtracks=$(${binpath}/detecttracks --drive ${device})
+	elif [ ${improvedtrackdetect} = '0' ]
+	then
+		numtracks=$(echo ${fullid} | awk '{print $2}')
+	else
+		echo "Invalid improvedtrackdetect setting, please correct"
+		exit
+	fi
+	
+	fullid=`echo $fullid | tr ' ' "+"`
+	client="linuxrip"
+	version="0.01"
+	url="${cddbserver}/~cddb/cddb.cgi?cmd=cddb"
+	hello="hello=$cddbuser+$cddbemail+$client+$version&proto=6"
+	tmp="/tmp/cdrip.$$"
+	
+	echo 'Retrieving cddb information'
+	# query the freedb and parse the output
+	wget -q -O- "$url+query+$fullid&$hello" > ${tmp}
+	
+	{
+		read code category[1] freedbid[1] artist_album[1]
+
+		# errors and multiple matches need to be handled differently
+		if [[ ${code} == "210" || ${code} == "211" ]]; then
+			echo 'Multiple results detected.'
+			n=1
+			validresult='1'
+			while [[ ${validresult} == '1' ]]; do 
+				read category[$n] freedbid[$n] artist_album[$n]
+				if [[ ${freedbid[$n]} == '' ]]; then
+					validresult='0'
+					nmax=$(echo "${n}-1" | bc )
+				fi
+				let 'n += 1'
+			done
+			for (( n=1; $n <= ${nmax}; n++ )); do
+				artist_album[$n]=$(echo ${artist_album[$n]} | tr -d '\r')
+				artist[$n]="$(${binpath}/tagprocess --process "$(echo ${artist_album[$n]} | sed 's| / .*$||')" "${capitalletter}" "${noprocess}")"
+				album[$n]="$(${binpath}/tagprocess --process "$(echo ${artist_album[$n]} | sed 's|^.* / ||')" "${capitalletter}" "${noprocess}")"
+				genre[$n]="$(${binpath}/tagprocess --process "${category[$n]}" "${capitalletter}" "${noprocess}")"
+			done
+		elif [[ ${code} != "200" ]]; then
+			echo "FreeDB error: $code."
+			echo "Switching to interactive mode."
+
+			interactive=1
+			error=1
+			artist_album="Artist / Album"
+			for (( i=1; $i <= ${numtracks}; i++ )) ; do
+				tracks[$i]="Track $i"
+			done
+		else
+			# if there's only one result, then that will become our result
+			artist_album=$(echo ${artist_album[1]} | tr -d '\r')
+			category="${category[1]}"
+			freedbid="${freedbid[1]}"
+			# separate artist_album and pass to tagprocess script
+			artist="$(${binpath}/tagprocess --process "$(echo $artist_album | sed 's| / .*$||')" "${capitalletter}" "${noprocess}")"
+			album="$(${binpath}/tagprocess --process "$(echo $artist_album | sed 's|^.* / ||')" "${capitalletter}" "${noprocess}")"
+			genre="$(${binpath}/tagprocess --process "${category}" "${capitalletter}" "${noprocess}")"
+		fi
+	} < ${tmp}
+	rm ${tmp}
+}
+
+retrievetrackinfo() {
+	# the first argument is the preferred result
+	number="${1}"
+	year="00" # default year
+	
+	if [[ ${error} != "1" ]]
+	then
+		# get track listing and year
+		wget -q -O- "$url+read+${category[$number]}+${freedbid[$number]}&$hello" | tr "=" " " | sed 's,^TTITLE[0-9]*,TTITLE,' > ${tmp}
+		#manually edit cddb info from server if needed, only works for track names
+		if [[ ${manuallyeditcddbinfo} = '1' ]]
+		then
+			${texteditor} ${tmp}
+		fi
+		i=1
+		while read key value
+		do
+			# the added sed statement is due to change in syntax at freedb2.org (it seems)
+			value=`echo $value | tr -d '\r' | sed s^"/ "^^`
+
+			if [[ ${key} == "DYEAR" && ${value} != "" ]]
+			then
+				year=${value}
+			elif [[ ${key} == "TTITLE" ]]
+			then
+				# pass track name to tagprocess script
+				tracks[$i]="$(${binpath}/tagprocess --process "${value}" "${capitalletter}" "${noprocess}")"
+				let i++
+			fi
+		done < ${tmp}
+		rm ${tmp}
+	fi
+}
+
+# if there are multiple results this function is used
+choosecddbresult() {
+	donechoosing='0'
+	while [[ ${donechoosing} == '0' ]]; do
+		for (( n=1; $n <= ${nmax}; n++ )); do
+			echo "$n: ${artist[$n]} - ${album[$n]} (${genre[$n]})"
+		done
+		echo ''
+		echo 'Please choose the number you would like to preview:'
+		read choice
+		retrievetrackinfo "${choice}"
+		echo ''
+		echo "Artist: ${artist[$choice]}"
+		echo "Album: ${album[$choice]}"
+		echo "Year: ${year}"
+		echo "Genre: ${genre[$choice]}"
+		echo ''
+		# here the tracks will be displayed, if it's not ok, the procedure will be restarted
+		n=1
+		for track in "${tracks[@]}"; do
+			echo "${n}: ${track}"
+			let 'n+=1'
+		done
+		echo ''
+		echo 'Is this the desired album? (yes/no)'
+		read reply
+		# process the reply, so it is more safe
+		reply=$(${binpath}/anser "${reply}" "" )
+		if [[ ${reply} == '1' ]]; then
+			artist="${artist[$choice]}"
+			album="${album[$choice]}"
+			genre="${genre[$choice]}"
+			donechoosing='1'
+		fi
+		echo ''
+	done
+}
+
+cddbuserinput() {
+	if [[ ${interactive} == "1" ]] 
+	then
+		echo "Artist: $artist"
+		echo "Album:  $album"
+		echo "Year:   $year"
+		echo "Genre: $genre"
+		echo
+
+		for (( i=1; $i <= ${numtracks}; i++ ))
+		do
+			printf "%2d: %s\n" "$i" "${tracks[$i]}"
+		done
+	
+		echo
+	
+		if [[ ${various} != "1" ]]
+		then
+			echo -n "Is this a compilation album? (yes/NO) : "
+			read reply
+			# process the reply, so it is more safe
+			reply=$(${binpath}/anser "${reply}" "no" )
+		fi
+		
+		if [[ ${reply} == "1" ]]
+		then
+			various=1
+		else
+			various=0
+		fi
+	fi
+
+	echo -n "Would you like to edit this information? (yes/NO) : "
+	read reply
+	# make responces more robust
+	reply=$(${binpath}/anser "${reply}" "no")
+	
+	if [[ ${reply} == "1" ]]
+	then
+		ok='no'
+		while [[ ${ok} != "yes" ]]
+		do
+			# ensure that newly added names also adhere to the capital letter setting
+			echo -n "Artist [$artist] : "
+			read data
+			[[ ${data} != "" ]] && artist="$(${binpath}/tagprocess --process "${data}" "${capitalletter}" "${noprocess}")"
+			
+			echo -n "Album [$album] : "
+			read data
+			[[ ${data} != "" ]] && album="$(${binpath}/tagprocess --process "${data}" "${capitalletter}" "${noprocess}")"
+			
+			echo -n "Year [$year] : "
+			read data
+			[[ ${data} != "" ]] && year="${data}"
+			
+			echo -n "Genre [$genre] : "
+			read data
+			[[ ${data} != "" ]] && genre="$(${binpath}/tagprocess --process "${data}" "${capitalletter}" "${noprocess}")"
+				
+			for (( i=1; $i <= ${numtracks}; i++ ))
+			do
+				echo -n "Track $i [${tracks[$i]}] : "
+				read data
+				[[ ${data} != "" ]] && tracks[$i]="$(${binpath}/tagprocess --process "${data}" "${capitalletter}" "${noprocess}")"
+				done
+			echo ""
+			echo "Artist: $artist"
+			echo "Album:  $album"
+			echo "Year:   $year"
+			echo "Genre: $genre"
+			echo ""
+			
+			for (( i=1; $i <= ${numtracks}; i++ ))
+			do
+				printf "%2d: %s\n" "$i" "${tracks[$i]}"
+			done
+			
+			echo ""
+			echo -n "Are you happy with your choices? (yes/NO): "
+			read ok
+			# make responces more robust
+			ok=$(${binpath}/anser "${ok}" "no" )
+			if [[ ${ok} == '1' ]]
+			then
+				ok='yes'
+			else
+				ok='no'
+			fi
+		done
+	fi
+}
+
+# id3 tags have a specific set of available genre's, so we must check if the genre is valid, otherwise set Other genre
+fixmp3genre() {
+		mp3genre='dummy'
+		genrelist=($(lame --genre-list | cut -c 5-))
+		for possiblegenre in "${genrelist[@]}"; do
+			if [ $(echo ${genre}| tr "A-Z" "a-z") == $(echo ${possiblegenre}| tr "A-Z" "a-z") ]; then
+			mp3genre="${possiblegenre}"
+			fi
+		done
+		if [ ${mp3genre} == "dummy" ]; then
+			mp3genre="Other"
+		fi
+}
+
+# needed for cd's with data tracks and some copy protections, no automatic choice because people should always choose
+# now defaults to yes if improvetrackdetect is on
+verifynumberoftracks () {
+	confirmed='0'
+	while [ ${confirmed} == '0' ]
+	do
+		echo "Number of tracks is: ${numtracks}"
+		if [ ${improvedtrackdetect} == '1' ]; then
+			echo "Please confirm this (YES/no)"
+			read choice
+			# make responces more robust
+			choice=$(${binpath}/anser "${choice}" "yes")
+			if [ ${choice} == '0' ]; then
+				confirmed='2'
+			else
+				confirmed='1'
+			fi
+		elif [ ${improvedtrackdetect} == '0' ]; then
+			echo "Please confirm this (yes/no)"
+			read choice
+			# make responces more robust
+			choice=$(${binpath}/anser "${choice}" "")
+			if [ ${choice} == '1' ]; then
+				confirmed='1'
+			elif [ ${choice} == '0' ]; then
+				confirmed='2'
+			fi
+		else
+			echo "Invalid improvedtrackdetect setting, please correct"
+			exit
+		fi
+	done
+	if [[ ${confirmed} == '2' ]]
+	then
+		echo 'You have chosen to manually change the number of tracks'
+		echo 'Enter number of tracks:'
+		read numtracks
+		echo "Number of tracks is now set for ${numtracks}"
+		choice='0'
+		echo 'Would you like to change this again? (yes/no)'
+		read choice
+		# make responces more robust
+		choice=$(${binpath}/anser "${choice}" "")
+		if [ ${choice} = '1' ]; then
+			echo 'You have chosen to manually change the number of tracks'
+			echo 'Enter number of tracks:'
+			read numtracks
+			echo "Number of tracks is now set for ${numtracks}"
+		elif [ ${choice} = '0' ]; then
+			echo 'Ripping will start'
+		else
+			echo 'Something went wrong'
+			exit
+		fi
+	fi
+}
+
+createfolderflac () {
+	codec='flac'
+	rippath[1]=$(foldertemplate)
+	mkdir -p "${rippath[1]}"
+}
+
+createfoldermpc () {
+	codec='mpc'
+	rippath[2]=$(foldertemplate)
+	mkdir -p "${rippath[2]}"
+}
+
+createfolderwavpack () {
+	codec='wavpack'
+	rippath[3]=$(foldertemplate)
+	mkdir -p "${rippath[3]}"
+}
+
+createfoldervorbis () {
+	codec='vorbis'
+	rippath[4]=$(foldertemplate)
+	mkdir -p "${rippath[4]}"
+}
+
+createfoldermp3 () {
+	codec='mp3'
+	rippath[5]=$(foldertemplate)
+	mkdir -p "${rippath[5]}"
+}
+
+gotofolder () {
+	cd "${rippath}"
+}
+
+gotofolderflac () {
+	cd "${rippath[1]}"
+}
+
+gotofoldermpc () {
+	cd "${rippath[2]}"
+}
+
+gotofolderwavpack () {
+	cd "${rippath[3]}"
+}
+
+gotofoldervorbis () {
+	cd "${rippath[4]}"
+}
+
+removewav () {
+	removetrack="${1}"
+	for (( m=1 ; $m <= ${limit} ; m++ ))
+	do
+		rm "${filename[$removetrack]}.attempt${m}.wav" &>/dev/null
+		if [ ${ripper} = 'cdda2wav' ]
+		then
+			rm "${filename[$removetrack]}.attempt${m}.inf" &>/dev/null
+		fi
+	done
+}
+
+createmd5 () {
+	echo 'Creating md5 file(s)'
+	md5filename="${generalfilename}.md5"
+	if [ ${encodeflac} = '1' ]
+	then
+		cd "${rippath[1]}"
+		md5sum -b "${flacfiles[@]}" > "${md5filename}" 
+		cd "${rippath}"
+	fi
+	if [ ${encodempc} = '1' ]
+	then
+		cd "${rippath[2]}"
+		md5sum -b "${mpcfiles[@]}" > "${md5filename}"
+		cd "${rippath}"
+	fi
+	if [ ${encodewavpack} = '1' ]
+	then
+		cd "${rippath[3]}"
+		md5sum -b "${wavpackfiles[@]}" > "${md5filename}"
+		cd "${rippath}"
+	fi
+	if [ ${encodevorbis} = '1' ]
+	then
+		cd "${rippath[4]}"
+		md5sum -b "${vorbisfiles[@]}" > "${md5filename}" 
+		cd "${rippath}"
+	fi
+	if [ ${encodemp3} = '1' ]
+	then
+		cd "${rippath[5]}"
+		md5sum -b "${mp3files[@]}" > "${md5filename}" 
+		cd "${rippath}"
+	fi
+}
+
+createm3u () {
+	echo 'Creating m3u file(s)'
+	m3ufilename="${generalfilename}.m3u"
+	if [ ${encodeflac} = '1' ]
+	then
+		cd "${rippath[1]}"
+		for ((i=1; $i <= ${#flacfiles[@]}; i++ ))
+		do
+			echo "${flacfiles[i]}" >> "${m3ufilename}"
+		done
+		cd "${rippath}"
+	fi
+	if [ ${encodempc} = '1' ]
+	then
+		cd "${rippath[2]}"
+		for ((i=1; $i <= ${#mpcfiles[@]}; i++ ))
+		do
+			echo "${mpcfiles[i]}" >> "${m3ufilename}"
+		done
+		cd "${rippath}"
+	fi
+	if [ ${encodewavpack} = '1' ]
+	then
+		cd "${rippath[3]}"
+		for ((i=1; $i <= ${#wavpackfiles[@]}; i++ ))
+		do
+			echo "${wavpackfiles[i]}" >> "${m3ufilename}"
+		done
+		cd "${rippath}"
+	fi
+	if [ ${encodevorbis} = '1' ]
+	then
+		cd "${rippath[4]}"
+		for ((i=1; $i <= ${#vorbisfiles[@]}; i++ ))
+		do
+			echo "${vorbisfiles[i]}" >> "${m3ufilename}"
+		done
+		cd "${rippath}"
+	fi
+	if [ ${encodemp3} = '1' ]
+	then
+		cd "${rippath[5]}"
+		for ((i=1; $i <= ${#mp3files[@]}; i++ ))
+		do
+			echo "${mp3files[i]}" >> "${m3ufilename}"
+		done
+		cd "${rippath}"
+	fi
+}
+
+createfakelog () {
+	fakelogfilename="${generalfilename}.log"
+	echo "This rip hasn't been made with Exact Audio Copy." > "${rippath}/${fakelogfilename}"
+	echo "See .xml file for equivilant log file." >> "${rippath}/${fakelogfilename}"
+}
+
+copylog () {
+	if [ ${keeplogslossless} = '1' ]; then
+		if [ ${encodeflac} = '1' ]
+		then
+			cp "${rippath}/${xmlfilename}" "${rippath[1]}/"
+			cp "${rippath}/${fakelogfilename}" "${rippath[1]}/"
+		fi
+		if [ ${encodewavpack} = '1' ]
+		then
+			cp "${rippath}/${xmlfilename}" "${rippath[3]}/"
+			cp "${rippath}/${fakelogfilename}" "${rippath[3]}/"
+		fi
+	fi
+	if [ ${keeplogslossy} = '1' ]; then
+		if [ ${encodevorbis} = '1' ]
+		then
+			cp "${rippath}/${xmlfilename}" "${rippath[4]}/"
+			cp "${rippath}/${fakelogfilename}" "${rippath[4]}/"
+		fi
+		if [ ${encodempc} = '1' ]
+		then
+			cp "${rippath}/${xmlfilename}" "${rippath[2]}/"
+			cp "${rippath}/${fakelogfilename}" "${rippath[2]}/"
+		fi
+		if [ ${encodemp3} = '1' ]
+		then
+			cp "${rippath}/${xmlfilename}" "${rippath[5]}/"
+			cp "${rippath}/${fakelogfilename}" "${rippath[5]}/"
+		fi
+	fi
+}
+
+removefiles () {
+	rm "${rippath}/${xmlfilename}"
+	rm "${rippath}/${fakelogfilename}"
+	if [ ${createnfo} = '1' ]
+	then
+		rm "${rippath}/${nfofilename}"
+	fi
+	rm '/tmp/linuxrip.encodelock' &>/dev/null
+}
+
+nfo () {
+	nfofilename="${generalfilename}.nfo"
+	addnotes='no'
+	echo 'Do you want to add notes to the nfo? (yes/NO)'
+	read addnotes
+	# make responces more robust
+	addnotes=$(${binpath}/anser "${addnotes}" "no")
+	if [[ ${adddrivename} = '1' ]]
+	then
+		${binpath}/nfowriter '--createbasic+' "${artist}" "${album}" "${year}" "${genre}" "${ripper}" "${encodeflac}" "{encodempc}" "{encodewavpack}" "${drivename}" "${rippath}/${nfofilename}"
+	elif [[ ${adddrivename} = '0' ]]
+	then
+		${binpath}/nfowriter '--createbasic' "${artist}" "${album}" "${year}" "${genre}" "${ripper}" "${encodeflac}" "{encodempc}" "{encodewavpack}" "${rippath}/${nfofilename}"
+	else
+		echo "Incorrect adddrivename setting, please correct"
+		exit
+	fi
+	if [[ ${rippername} != 'none' ]]
+	then
+		${binpath}/nfowriter '--addripper' "${rippername}" "${rippath}/${nfofilename}"
+	fi
+	# leo notes will only be added if leo and rex options are active and at least one lossless codec is used
+	if [[ ${leo} = '1' && ${rex} = '1' && ( ${encodeflac} = '1' || ${encodewavpack} = '1' ) ]]
+	then
+		${binpath}/nfowriter '--addleonotes' "${rippath}/${nfofilename}"
+	fi
+	if [[ ${addnotes} = '1' ]]
+	then
+		nfonotesok='0'
+		while [[ ${nfonotesok} = '0' ]]
+		do
+			echo "Please save file once you've written the notes, don't include notes: or anything like that"
+			read dummy
+			${texteditor} "${rippath}/nfonotes.txt"
+			nfonotes=$(cat "${rippath}/nfonotes.txt")
+			rm "${rippath}/nfonotes.txt"
+			echo "${nfonotes}"
+			echo 'Are these ok? (yes/no)'
+			read nfonotesok
+			# make responces more robust
+			nfonotesok=$(${binpath}/anser "${nfonotesok}" "")
+		done
+		${binpath}/nfowriter '--addnotes' "${nfonotes}" "${rippath}/${nfofilename}"
+	else
+		echo 'Notes will not be added'
+	fi
+}
+
+copynfo () {
+	if [ ${encodeflac} = '1' ]
+	then
+		cp "${rippath}/${nfofilename}" "${rippath[1]}/"
+	fi
+	if [ ${encodempc} = '1' ]
+	then
+		cp "${rippath}/${nfofilename}" "${rippath[2]}/"
+	fi
+	if [ ${encodewavpack} = '1' ]
+	then
+		cp "${rippath}/${nfofilename}" "${rippath[3]}/"
+	fi
+	if [ ${encodevorbis} = '1' ]
+	then
+		cp "${rippath}/${nfofilename}" "${rippath[4]}/"
+	fi
+}
+
+embedextrainfo () {
+	if [ ${encodeflac} = '1' ]
+	then
+		cd "${rippath[1]}"
+		logcontent=$(cat "${rippath}/${xmlfilename}")
+		nfocontent=$(cat "${rippath}/${nfofilename}")
+		metaflac --set-tag="logfile=${logcontent}" "${flacfiles[@]}"
+		cd "${rippath}"
+	fi
+	if [ ${encodevorbis} = '1' ]
+	then
+		cd "${rippath[4]}"
+		logcontent=$(cat "${rippath}/${xmlfilename}")
+		nfocontent=$(cat "${rippath}/${nfofilename}")
+		for file in ${vorbisfiles[@]}
+		do
+			vorbiscomment -a ${file} -t "logfile=${logcontent}"
+		done
+		cd "${rippath}"
+	fi
+}
+
+# create cue for a single flac image and copy it to the right place
+createcue () {
+	printf "\nCreating cue file...\n"
+	if [ ${encodeflac} = '1' ]; then
+		cdrdao read-toc --device "${deviceid}" ${readtocoptions} --datafile "${generalfilename}.flac" "${rippath}/${generalfilename}.toc" &>/dev/null
+		toc2cue "${rippath}/${generalfilename}.toc" "${rippath}/${generalfilename}.cue" &>/dev/null
+		rm "${rippath}/${generalfilename}.toc"
+		mv "${rippath}/${generalfilename}.cue" "${rippath[1]}/${generalfilename}.cue"
+		metaflac --import-cuesheet-from="${rippath[1]}/${generalfilename}.cue" "${rippath[1]}/${generalfilename}.flac" &>/dev/null
+	fi
+}
+
+# generate a cue file for multi file rips
+generatecue () {
+	printf "\nCreating cue file...\n"
+	extension='flac'
+	# we need the total sample length of a disc
+	cdrdao discid --device "${deviceid}" --query-string &> "${rippath}/${generalfilename}.dump"
+	while read data; do
+		if [[ -n $(echo "${data}" | grep "Leadout") ]]; then
+			frameposition[$numtracks+1]=$(echo "${data}" | awk '{print $4}' | sed s^[0-9]*:[0-9]*:[0-9]*^^ | cut -c 2- | rev | cut -c 2- | rev)
+		elif [[ -n $(echo "${data}" |  awk '{print $2}' | grep AUDIO) ]]; then
+			discidtrack=$(echo "${data}" | awk '{print $1}')
+			frameposition[$discidtrack]=$(echo "${data}" |  awk -F \( '{print $2}' | awk -F \) '{print $1}' | sed s^" "*^^)
+		fi
+	done < "${rippath}/${generalfilename}.dump"
+	rm "${rippath}/${generalfilename}.dump"
+	
+	
+	for (( c=1; ${c} <= ${numtracks}; c++ )); do
+		framelength[$c]=$(echo "${frameposition[$c+1]}-${frameposition[$c]}" | bc)
+	done
+	
+	
+	#limit speed
+	if [[ ${cdspeed} == '1' ]]
+	then
+		"${binpath}/lowercdspeed" "${device}" "${maximumspeed}" "200" &
+	fi
+	# gather data from toc
+	cdrdao read-toc --device "${deviceid}" ${readtocoptions} "${rippath}/${generalfilename}.toc" &>/dev/null
+	while read data; do
+		if [[ -n $(echo "${data}" | grep "// Track") ]]; then
+			cuetrack=$(echo "${data}" | sed  s^"// Track "^^)
+		elif [[ -n $(echo "${data}" | grep "START") ]]; then
+			pregap[$cuetrack]=$(echo "${data}" | sed s^"START "^^)
+			pregapframes[$cuetrack]=$(echo "$(echo "${pregap[$cuetrack]}" | awk -F : '{print $1}')*60*75+$(echo "${pregap[$cuetrack]}" | awk -F : '{print $2}')*75+$(echo "${pregap[$cuetrack]}" | awk -F : '{print $3}')" | bc)
+		elif [[ -n $(echo "${data}" | grep "FILE") ]]; then
+			# this is NOT corrected for pregap time, so don't use it :-)
+			tracklength[$cuetrack]=$(echo "${data}" | awk '{print $4}')
+			# for comparison with "real" tracks, to check if more tracks per file are needed
+			cueframelength[$cuetrack]=$(echo "$(echo "${tracklength[$cuetrack]}" | awk -F : '{print $1}')*60*75+$(echo "${tracklength[$cuetrack]}" | awk -F : '{print $2}')*75+$(echo "${tracklength[$cuetrack]}" | awk -F : '{print $3}')" | bc)
+		fi
+	done < "${rippath}/${generalfilename}.toc"
+	rm "${rippath}/${generalfilename}.toc"
+	
+	# correct for pregap frames which seem to included in the length
+	for (( e=1; ${e} <= ${cuetrack}; e++ )); do
+		if [[ -n ${pregap[$e]} ]]; then
+			cueframelength[$e]=$(echo "${cueframelength[$e]}-${pregapframes[$e]}" | bc)
+		fi
+	done
+	
+	printf "REM GENRE \"${genre}\"" > "${rippath}/${generalfilename}.cue"
+	printf "\nREM DATE \"${year}\"" >> "${rippath}/${generalfilename}.cue"
+	printf "\nREM COMMENT \"linuxrip ${linuxripversion}\"" >> "${rippath}/${generalfilename}.cue"
+	printf "\nPERFORMER \"${artist}\"" >> "${rippath}/${generalfilename}.cue"
+	printf "\nTITLE \"${album}\"" >> "${rippath}/${generalfilename}.cue"
+	
+	# we need a variable to keep track of the "cue tracks"
+	b=1;
+	for (( a=1; ${a} <= ${numtracks}; a++ )); do
+		printf "\nFILE \"${filename[$a]}.${extension}\" WAVE" >> "${rippath}/${generalfilename}.cue"
+		remainingframes="${framelength[$a]}"
+		
+		passedframes=0
+		subtrack=1
+		while (( ${remainingframes} > 0 )); do
+			# we need to keep in mind that we're using the pregap of the next track each cycle
+			if [[ -n ${pregap[$b-$subtrack+1]} && ${subtrack} > 1 ]]; then
+				passedframes=$(echo "${passedframes} + ${cueframelength[$b-$subtrack]} + ${pregapframes[$b-$subtrack+1]}" | bc)
+			elif [[ ${subtrack} > 1 ]]; then
+				passedframes=$(echo "${passedframes} + ${cueframelength[$b-$subtrack]}" | bc)
+			fi
+			# bc does calculations on the decimal level of the input, bc -l adds more decimal numbers
+			minutes=$(echo "${passedframes}/75/60" | bc)
+			# it is possible that one of the three becomes nothing in the passedframes is very small, so as a backup they are set 0 if needed
+			if [[ ! -n ${minutes} ]]; then
+				minutes=0
+			fi
+			# added '+0.0001' because some numbers were x.9999999999 or something like that, which are rounding errors
+			seconds=$(echo "0.$(echo "(${passedframes}+0.0001)/75/60" | bc -l | awk -F . '{print $2}')*60" | bc -l | awk -F . '{print $1}')
+			if [[ ! -n ${seconds} ]]; then
+				seconds=0
+			fi
+			frames=$(echo "0.$(echo "(${passedframes}+0.0001)/75" | bc -l | awk -F . '{print $2}')*75" | bc -l | awk -F . '{print $1}')
+			if [[ ! -n ${frames} ]]; then
+				frames=0
+			fi
+			# for a pregap the start of the track is the same as the normal start and the other a bit later
+			if [[ ${pregap[$b+1]} ]]; then
+				trackbegin="$(printf "%02d" ${minutes}):$(printf "%02d" ${seconds}):$(printf "%02d" ${frames})"
+				# added '+0.0001' because some numbers were x.9999999999 or something like that, which are rounding errors
+				minutes=$(echo "(${passedframes}+${cueframelength[$b]})/75/60" | bc)
+				seconds=$(echo "0.$(echo "(${passedframes}+${cueframelength[$b]}+0.0001)/75/60" | bc -l | awk -F . '{print $2}')*60" | bc -l | awk -F . '{print $1}')
+				frames=$(echo "0.$(echo "(${passedframes}+${cueframelength[$b]}+0.0001)/75" | bc -l | awk -F . '{print $2}')*75" | bc -l | awk -F . '{print $1}')
+				pregaplocation="$(printf "%02d" ${minutes}):$(printf "%02d" ${seconds}):$(printf "%02d" ${frames})"
+			else
+				trackbegin="$(printf "%02d" ${minutes}):$(printf "%02d" ${seconds}):$(printf "%02d" ${frames})"
+			fi
+			# printf will not accept ${b}+1 by itself
+			nexttrack="$((${b}+1))"
+			# track 1 is an exception, since i suspect it has the pregap embedded at the front
+			if [[ -n ${pregap[$b]} && ${a} == 1 ]]; then
+				printf "\n TRACK $(printf "%02d" ${b}) AUDIO" >> "${rippath}/${generalfilename}.cue"
+				printf "\n   TITLE \"${tracks[$a]}\"" >> "${rippath}/${generalfilename}.cue"
+				printf "\n   INDEX 00 00:00:00" >> "${rippath}/${generalfilename}.cue"
+			# we must not forgot that tracks lacking a pregap will not have an "TRACK XX AUDIO" entry yet
+			elif [[ ! -n ${pregap[$b]} ]]; then
+				printf "\n TRACK $(printf "%02d" ${b}) AUDIO" >> "${rippath}/${generalfilename}.cue"
+				printf "\n   TITLE \"${tracks[$a]}\"" >> "${rippath}/${generalfilename}.cue"
+			fi
+			# track 1 is already dealt with
+			# the next tracks pregap will have to be added if present
+			if [[ -n ${pregap[$b+1]} ]]; then
+				printf "\n   INDEX 01 ${trackbegin}" >> "${rippath}/${generalfilename}.cue"
+				printf "\n TRACK $(printf "%02d" ${nexttrack}) AUDIO" >> "${rippath}/${generalfilename}.cue"
+				printf "\n   TITLE \"${tracks[$a+1]}\"" >> "${rippath}/${generalfilename}.cue"
+				printf "\n   INDEX 00 ${pregaplocation}" >> "${rippath}/${generalfilename}.cue"
+			# the last track can never have a next track with a pregap, so let's not forget that :-)
+			else
+				printf "\n   INDEX 01 ${trackbegin}" >> "${rippath}/${generalfilename}.cue"
+			fi
+			# we must not forgot the pregap frames, otherwise a few frames will be left and all hell will break loose
+			if [[ -n ${pregap[$b+1]} ]]; then
+				# we must account for the pregap frames
+				remainingframes=$(echo "${remainingframes} - ${cueframelength[$b]} - ${pregapframes[$b+1]}" | bc)
+			else
+				remainingframes=$(echo "${remainingframes} - ${cueframelength[$b]}" | bc)
+			fi
+			let 'b += 1'
+			# we want to handle multiple tracks per file, don't we :-)
+			if (( ${remainingframes} > 0 )); then
+				let 'subtrack += 1'
+			fi
+		done
+	done
+	mv "${rippath}/${generalfilename}.cue" "${rippath[1]}/${generalfilename}.cue"
+}
+
+dopostripcommands () {
+	printf "\nRunning post-rip commands...\n"
+	for (( z=1; ${z} <= ${numberofcodecs}; z++ )); do
+		if [[ "${codeclist[$z]}" != "" ]]; then
+			cd "${rippath[$z]}"
+			for (( y=1; ${y} <= ${#postripcommand[@]}; y++ )); do
+				${postripcommand[$z]}
+			done
+		fi
+	done
+	cd "${rippath}"
+}
+
+warning () {
+	if [[ ${failedmd5} == '1' ]]; then
+		echo "One or more tracks failed to match after ${limit} attempts."
+		echo "Please be aware of this and manually check the files (if you didn't want this, then don't turn on the allowmismatchingmd5s setting on)."
+	elif [[ ${troublesome} == '1' ]]; then
+		echo "One or more tracks had to ripped more than twice, this could mean that either the cd is getting worse or the ripping drive is in poor shape."
+	fi
+}
+
+ripmultifile () {
+	prerip
+	# Rip tracks from the CD
+	for (( i=1; $i <= ${numtracks}; i++ )); do
+		attempt=1
+		tracknumber=$(printf "%02d" $i) # get a 2-digit track num
+		tracknumbertag=$(printf "%01d" $i) # track number without extra 0 in front for tag
+		tracknumbertag[$i]=$(printf "%01d" $i) # tracknumber for encoding (which runs seperate)
+		title="${tracks[$i]}" # get the track name from the array
+		filename=$(filetemplate)
+		filename[$i]="${filename}"
+		rip
+	done
+	# postrip is called at the end of the last encode
+}
+
+ripsinglefile () {
+	#deal with some settings
+	encodeflac=1; encodemusepack=0; encodewavpack=0; encodemp3=0; encodevorbis=0
+	prerip
+	attempt=1
+	# both the main value and array[1] value are needed for compatability with the existing structure
+	tracknumbertag=( "1-${numtracks}" "1-${numtracks}" )
+	# ensure it doesn't try to deal with more than one file
+	numtracks='1'
+	filename="${generalfilename}"
+	filename[1]="${generalfilename}"
+	title="Entire CD"
+	tracks[1]=""
+	rip
+	# postrip is called at the end of the last encode
+}
+
+if [ ${ripsinglefile} == '1' ]; then
+	ripsinglefile
+else
+	ripmultifile
+fi

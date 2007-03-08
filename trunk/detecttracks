@@ -1,0 +1,50 @@
+# !/bin/sh
+#
+# detecttracks, detects number of audio tracks using cdparanoia 
+# Copyright (C) 2006  madman2003 (madman2003@gmail.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+version='0.02'
+
+defaultcddrive='/dev/cdrom'
+tmpfile='/tmp/cdparanoia.detect'
+
+if [ ${1} == '--drive' ] &> /dev/null
+then
+	cddrive=${2}
+else
+	cddrive=${defaultcddrive}
+fi
+
+cdparanoia -d ${cddrive} -Q &> ${tmpfile}
+
+trackdata=$(cat ${tmpfile} | cut -c 1-3 | rev | cut -c 1-2 | rev | tr [a-z] "\0" | tr [A-Z] "\0" | tr "=" "\0")
+
+track=1
+finished='no'
+while [ ${finished} != 'yes' ]
+do
+	trackexist=$(echo ${trackdata} | grep ${track})
+	if [[ ${trackexist} == '' ]]
+	then
+		finished='yes'
+		numberoftracks=$(echo ${track}-1 | bc)
+	fi
+	let 'track += 1'
+done
+
+#rm ${tmpfile} &> /dev/null
+echo "${numberoftracks}"

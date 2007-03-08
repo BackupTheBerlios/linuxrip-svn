@@ -1,0 +1,145 @@
+#! /bin/bash
+#
+# md5convert, swaps md5 and filename in md5 files
+# Copyright (C) 2006  madman2003 (madman2003@gmail.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+version='0.03'
+onlymusic='1'
+tmpfile='/tmp/md5convert.tmp'
+
+convert () {
+
+exec < "${source}"
+while read line
+do
+
+	flacp=$(echo "${line}" | grep -i flac)
+	mpcp=$(echo "${line}" | grep -i mpc)
+	apep=$(echo "${line}" | grep -i ape)
+	wvp=$(echo "${line}" | grep -i wv)
+	if [ ${onlymusic} = '1' ]
+	then
+		if [[ ${flacp} != "" || ${mpcp} != "" || ${apep} != "" || ${wvp} != "" ]]
+		then
+			md5=$(echo ${line} | rev | cut -c 2-33 | rev)
+			filename=$(echo ${line} | rev | cut -c 35- | rev)
+			printf "${md5} *${filename}\n" >> "${target}"
+		fi
+	else
+		md5=$(echo ${line} | rev | cut -c 2-33 | rev)
+		filename=$(echo ${line} | rev | cut -c 35- | rev)
+		printf "${md5} *${filename}\n" >> "${target}"
+	fi
+done
+
+}
+
+convertauto () {
+
+# only works with one md5 file in the folder
+
+md5file=$(ls *.md5)
+
+exec < "${md5file}"
+while read line
+do
+	flacp=$(echo "${line}" | grep -i flac)
+	mpcp=$(echo "${line}" | grep -i mpc)
+	apep=$(echo "${line}" | grep -i ape)
+	wvp=$(echo "${line}" | grep -i wv)
+	if [ ${onlymusic} = '1' ]
+	then
+		if [[ ${flacp} != "" || ${mpcp} != "" || ${apep} != "" || ${wvp} != "" ]]
+		then
+			md5=$(echo ${line} | rev | cut -c 2-33 | rev)
+			filename=$(echo ${line} | rev | cut -c 35- | rev)
+			printf "${md5} *${filename}\n" >> "${md5file} CORRECTED"
+		fi
+	else
+		md5=$(echo ${line} | rev | cut -c 2-33 | rev)
+		filename=$(echo ${line} | rev | cut -c 35- | rev)
+		printf "${md5} *${filename}\n" >> "${md5file} CORRECTED"
+	fi
+done
+
+}
+
+convertmass () {
+
+echo "$(ls *.md5)" > "${tmpfile}" # get a list of all md5's
+
+while read md5file
+do
+	while read line
+	do
+		targetfile="${target}/${md5file}"
+		flacp=$(echo "${line}" | grep -i flac)
+		mpcp=$(echo "${line}" | grep -i mpc)
+		apep=$(echo "${line}" | grep -i ape)
+		wvp=$(echo "${line}" | grep -i wv)
+		if [ ${onlymusic} = '1' ]
+		then
+			if [[ ${flacp} != "" || ${mpcp} != "" || ${apep} != "" || ${wvp} != "" ]]
+			then
+				md5=$(echo ${line} | rev | cut -c 2-33 | rev)
+				filename=$(echo ${line} | rev | cut -c 35- | rev)
+				printf "${md5} *${filename}\n" >> "${targetfile}"
+			fi
+		else
+			md5=$(echo ${line} | rev | cut -c 2-33 | rev)
+			filename=$(echo ${line} | rev | cut -c 35- | rev)
+			printf "${md5} *${filename}\n" >> "${targetfile}"
+		fi
+	done < "${md5file}"
+	
+done < "${tmpfile}"
+
+}
+
+if [ ${1} == '--help' ]
+then
+	echo "md5convert: version ${version}"
+	echo "usage:"
+	echo "./md5convert --auto"
+	echo "Note: Only works on single md5 in folder."
+	echo "./md5convert --massconvert targetfolder"
+	echo "./md5convert --manual sourcemd5 targetmd5"
+	echo "./md5convert --manual2 sourcemd5 targetfolder"
+elif [ ${1} == '--auto' ]
+then
+	convertauto
+elif [ ${1} == "--manual" ]
+then
+	source="${PWD}/${2}"
+	target="${PWD}/${3}"
+	convert
+elif [ ${1} == "--manual2" ]
+then
+	source="${PWD}/${2}"
+	target="${3}/${2}"
+	convert
+elif [ ${1} == "--massconvert" ]
+then
+	target="${2}"
+	convertmass
+else
+	echo "Enter the location of the source md5:"
+	read source
+	echo "Enter the target location of the new md5:"
+	read target
+	convert
+fi

@@ -1,0 +1,173 @@
+#! /bin/bash
+
+### These settings override the default linuxrip settings, uncomment what you want to change
+
+### Base configuration, this needs to be set properly
+
+## cdrom device location
+#device[1]='/dev/cdrom'
+#device[2]='/dev/cdrom1'
+
+## drivename, will only be put in nfo and xml file, array
+#drivename[1]='Drivename1'
+#drivename[2]='Drivename2'
+
+## device id, only needed for cue sheet creation, use "cdrdao scanbus" for info
+#deviceid[1]='ATA:0,1,0'
+#deviceid[2]='ATA:0,0,0'
+
+## rippath
+#rippath='/dev/null'
+
+### Optional configuration, recommended to look at
+
+## text editor command
+#texteditor='nano'
+
+## maximum amount of rip attempts before giving up
+#defaultries='10'
+
+## freedb server
+#cddbserver='freedb2.org'
+
+## freedb user
+#cddbuser='linuxrip'
+
+## FreeDB email address
+#cddbemail='localhost@localhost'
+
+## cddb port number
+#cddbport='8880'
+
+## interactive mode, 0 = no, 1 = yes
+#interactive='1'
+
+## rip single file flac
+#ripsinglefile='0'
+
+## toc read options, add --fast-toc to skip pregap detection
+#readtocoptions=""
+
+## generate cue, only for flac atm
+#generatecuefile='1'
+
+## encode flac, 0 = no, 1 = yes
+#encodeflac='1'
+
+## reference flac encoder options
+#flacoptions='-V -6'
+
+## flake flac encoder options
+#flakeoptions='-10'
+
+## flake doesn't verify on it's own, so flac -t can be used for that
+#flakeverify='1'
+
+## flac encoder, 'flac' and 'flake' are the choices
+#flacencoder='flac'
+
+## encode wavpack, 0 = no, 1 = yes
+#encodewavpack='0'
+
+## wavpack encode options
+#wavpackoptions=''
+
+## encode mpc, 0 = no, 1 = yes
+#encodempc='0'
+
+## mpc encode options
+#mpcoptions='--quality 8'
+
+## encode ogg vorbis, 0 = no, 1 = yes
+#encodevorbis='0'
+
+## ogg vorbis encode options
+#vorbisoptions='-q 8'
+
+## encode mp3, i had better not catch you using this for storage purposes :-)
+#encodemp3='0'
+
+## mp3 encode options
+#lameoptions='-V 2 --vbr-new'
+
+## ripper, either cdparanoia or cdda2wav
+#ripper[1]='cdparanoia'
+#ripper[2]='cdda2wav'
+
+## remove wav files, 0 =no, 1 = yes 
+#removewavs='1'
+
+## folder template
+#setfoldertemplate='1'
+
+## file template
+#setfiletemplate='1'
+
+## filetemplate 2: when exceeding 60 character base(xml file for example) filename(excluding extensions), it will switch to just "albumname.extension"
+#maxfilenamecharacters='60'
+
+## file tag
+#filetag='anon'
+
+## create nfo
+#createnfo='1'
+
+## add drivename to nfo and xml logfile, set drivename below
+#adddrivename='1'
+
+## add rippername to nfo, use 'none' if it should not be added
+#rippername='none'
+
+## track names (and other things) start with capital letters, even if cddb gives a small letter. 1=capital letter, 0=no capital letter.
+#capitalletter='1'
+
+## noprocess means the tags will not be changed in any way
+#noprocess='0'
+
+## use cdparanoia instead of cd-discid to determine amount of tracks (cdparanoia ignores data tracks), 1=yes, 0=no
+## note: with this option on the question if the amount of tracks is right will default to yes instead of having no default.
+#improvedtrackdetect='1'
+
+## verbose ripping output
+#verbose='1'
+
+## use cdspeed to set maximum drive speed
+#cdspeed='1'
+#maximumspeed='15'
+
+## embed log into flac and/or vorbis files
+#embedlog='1'
+
+## keep logs, i sinserely recommend keeping the logs for any storage files
+#keeplogslossless='1'
+#keeplogslossy='1'
+
+## postrip commands excecuted from the rip folder, please use 'quotes', so the commands are not interpreted atm
+#postripcommand[1]='ls -a'
+
+### Expert configuration
+
+## set the drive read offset here, array
+#driveoffset[1]='0'
+#driveoffset[2]='0'
+
+## cdparanoia options, array
+#cdparanoiaoptions[1]="-X -z -O ${driveoffset[1]} -d ${device[1]}"
+#cdparanoiaoptions[2]="-X -z -T ${driveoffset[2]} -d ${device[2]}"
+
+## cdda2wav options, array
+#cdda2wavoptions[1]="--paranoia --paraopts retries=999 -o ${driveoffset[1]} -D ${device[1]}"
+#cdda2wavoptions[2]="--paranoia --paraopts retries=999 -o ${driveoffset[2]} -D ${device[2]}"
+
+## some cd's have destructive copy protections, such as cds200, most drives are (probably) not capable of a 100% rip, be sure to listen very carefully to rips with this setting turned on
+#allowmismatchingmd5s='0'
+
+## manually edit info send from the cddb server, in case something is messed up a bit and rewriting costs a lot of time, only works for track names
+#manuallyeditcddbinfo='1'
+
+## create rips that are in line with the goals of the rex-guide (http://rex-guide.de.vu), rex guide only specifies exact audio copy atm
+#rex='1'
+
+## leo stands for Lossless Exact Original and should only be turned when ripping original cd's and rex switch is on
+## this switch only affects a tag in the log and in the foldername
+#leo='1'

@@ -1,0 +1,116 @@
+#! /bin/bash
+#
+#  rename, automaticly renames an album
+# Copyright (C) 2006  madman2003 (madman2003@gmail.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+version='0.03'
+tmpfile='/tmp/rename.tmp'
+
+if [[ ${1} == '--help' ]]; then
+	echo "rename: version ${version}"
+	echo "usage: ./rename <folderlocation>"
+	exit
+elif [[ ${1} == '' ]]; then
+	exit
+fi
+
+folder="${1}"
+replaygain='1'
+
+if [[ ${2} == "0" ]] &> /dev/null; then
+	replaygain='0'
+fi
+
+setgeneralfilename() {
+	# strip folder names and turn them into something usefull
+	tempvar1=$(echo "${folder}" | rev | cut -c 1 | sed s^/^^ | rev)
+	tempvar2=$(echo "${folder}" | rev | cut -c 2- | rev)
+	generalfilename="00 - $(echo "${tempvar2}${tempvar1}" | awk -F / '{print $NF}' | sed s^" {.*}"^^ | sed s^" [[]FLAC[]]"^^)"
+}
+
+checkfiles() {
+	ls "${folder}" > ${tmpfile}
+
+	while read newfile; do
+		files=( "${files[@]}" "${newfile}" )
+	done < ${tmpfile}
+
+	for (( i=0; ${i} < "${#files[@]}"; i++ )); do
+		extentions[$i]=$(echo "${files[$i]}"  | awk '{print $NF}' | awk -F . '{print $NF}' | tr "A-Z" "a-z")
+	done
+
+	for (( j=0; "${j}" < "${#files[@]}"; j++ )); do
+		case "${extentions[$j]}"  in
+		md5 )
+			rm "${folder}/${files[$j]}"
+		;;
+		m3u )
+			rm "${folder}/${files[$j]}"
+		;;
+		flac )
+			echo "Adding ${files[$j]} to flac list."
+			flacfiles=( "${flacfiles[@]}" "${files[$j]}" )
+		;;
+		artwork | art | scans | covers )
+			echo "I do not touch artwork."
+		;;
+		misc )
+			echo "I do not touch misc files."
+		;;
+		jpg )
+			# i don't want them :-)
+			if [ ${files[$j]} == 'folder.jpg' ]; then
+				rm "${folder}/${files[$j]}"
+			elif [ ${files[$j]} == 'thumb.jpg' ]; then
+				rm "${folder}/${files[$j]}"
+			fi
+		;;
+		* )
+			mv "${folder}/${files[$j]}" "${folder}/${generalfilename}.${extentions[$j]}"
+		;;
+		esac
+	done
+}
+
+doreplaygain() {
+	currentpath="$(pwd)"
+	cd "${folder}"
+	metaflac --add-replay-gain "${flacfiles[@]}"
+	cd "${currentpath}"
+}
+
+createmd5() {
+	currentpath="$(pwd)"
+	cd "${folder}"
+	md5sum -b "${flacfiles[@]}" > "${folder}/${generalfilename}.md5"
+	cd "${currentpath}"
+}
+
+createm3u() {
+	currentpath="$(pwd)"
+	cd "${folder}"
+	ls "${flacfiles[@]}" > "${folder}/${generalfilename}.m3u"
+	cd "${currentpath}"
+}
+
+setgeneralfilename
+checkfiles
+if [ ${replaygain} == '1' ]; then
+	doreplaygain
+fi
+createmd5
+createm3u

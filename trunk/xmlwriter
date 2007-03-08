@@ -1,0 +1,76 @@
+#! /bin/bash
+#
+# xmlwriter, a simple xmlwriter for use with linuxrip
+# Copyright (C) 2006  madman2003 (madman2003@gmail.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+version=0.023
+
+if [ $1 = '--help' ]
+then
+echo "xmlwriter ${version}"
+echo '--help: view this'
+echo '--create: ./xmlwriter --create <filename>'
+echo '--add: ./xmlwriter --add <name> <value> <filename>'
+echo '--addex: ./xmlwriter --addex <name> <subname> <subvalue> <value> <filename>'
+echo '--delete: ./xmlwriter --delete <filename>'
+echo '--addsub: ./xmlwriter --addsub <name> <filename>'
+echo '--addsubex: ./xmlwriter --addsubex <name> <subname> <subvalue> <filename>'
+echo '--closesub: ./xmlwriter --closesub <name> <filename>'
+echo '--emptyline: ./xmlwriter --emptyline <filename>'
+fi
+
+if [ $1 = '--create' ]
+then
+echo '<?xml version="1.0"?>' > "$2"
+fi
+
+if [ $1 = '--add' ]
+then
+echo "<$2>$3</$2>" >> "$4"
+fi
+
+if [ $1 = '--addex' ]
+then
+echo "<$2 $3=\"$4\">$5</$2>" >> "$6"
+fi
+
+if [ $1 = '--delete' ]
+then
+rm "$2"
+fi
+
+if [ $1 = '--addsub' ]
+then
+echo "<$2>" >> "$3"
+fi
+
+if [ $1 = '--addsubex' ]
+then
+echo "<$2 $3=\"$4\">" >> "$5"
+fi
+
+if [ $1 = '--closesub' ]
+then
+echo "</$2>" >> "$3"
+fi
+
+if [ $1 = '--emptyline' ]
+then
+echo '' >> "$2"
+fi
+
+

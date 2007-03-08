@@ -1,0 +1,129 @@
+#! /bin/bash
+#
+# nfowriter, a simple nfo creator for use with linuxrip
+# Copyright (C) 2006  madman2003 (madman2003@gmail.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+version=0.05
+
+if [ $1 = '--help' ]
+then
+echo "nfowriter: ${version}"
+echo '--createbasic <artist> <album> <year> <genre> <ripper> <flac: 1/0> <musepack: 1/0> <wavpack: 1/0> <filename>'
+echo '--createbasic+ <artist> <album> <year> <genre> <ripper> <flac: 1/0> <musepack: 1/0> <wavpack: 1/0> <drive> <filename>'
+echo '--addripper <ripper> <filename>'
+echo '--addnotes <notes> <filename>'
+fi
+
+if [ $1 = '--createbasic' ]
+then
+	echo 'Album information:' > "${10}"
+	echo '' >> "${10}"
+	echo "Artist: $2" >> "${10}"
+	echo "Album: $3" >> "${10}"
+	echo "Year: $4" >> "${10}"
+	echo "Genre: $5" >> "${10}"
+	echo '' >> "${10}"
+	echo 'Rip information:' >> "${10}"
+	echo '' >> "${10}"
+	echo "Ripper: $6" >> "${10}"
+	if [ $7 = '1' ]
+	then
+		codec1='flac'
+	else
+		codec1=""
+	fi
+	if [ $8 = '1' ]
+	then
+		codec2='musepack'
+	else
+		codec2=""
+	fi
+	if [ $9 = '1' ]
+	then
+		codec3='wavpack'
+	else
+		codec3=""
+	fi
+	echo "Codec(s): ${codec1} ${codec2} ${codec3}" >> "${10}"
+	echo '' >> "${10}"
+	echo 'Ripper information:' >> "${10}"
+	echo '' >> "${10}"
+	echo "Date: $(date +%D)" >> "${10}"
+fi
+
+if [ $1 = '--createbasic+' ]
+then
+	echo 'Album information:' > "${11}"
+	echo '' >> "${11}"
+	echo "Artist: $2" >> "${11}"
+	echo "Album: $3" >> "${11}"
+	echo "Year: $4" >> "${11}"
+	echo "Genre: $5" >> "${11}"
+	echo '' >> "${11}"
+	echo 'Rip information:' >> "${11}"
+	echo '' >> "${11}"
+	echo "Ripper: $6" >> "${11}"
+	if [ $7 = '1' ]
+	then
+		codec1='flac'
+	else
+		codec1=""
+	fi
+	if [ $8 = '1' ]
+	then
+		codec2='musepack'
+	else
+		codec2=""
+	fi
+	if [ $9 = '1' ]
+	then
+		codec3='wavpack'
+	else
+		codec3=""
+	fi
+	echo "Codec(s): ${codec1} ${codec2} ${codec3}" >> "${11}"
+	echo "Drive: ${10}" >> "${11}"
+	echo '' >> "${11}"
+	echo 'Ripper information:' >> "${11}"
+	echo '' >> "${11}"
+	echo "Date: $(date +%D)" >> "${11}"
+fi
+
+if [ $1 = '--addripper' ]
+then
+	echo "Ripper: ${2}" >> "${3}"
+fi
+
+if [ $1 = '--addleonotes' ]
+then
+	echo '' >> "${2}"
+	echo 'LEO:' >> "${2}"
+	echo '' >> "${2}"
+	echo 'LEO stands for Lossless Exact Original and is a quality label.' >> "${2}"
+	echo 'It means that an original cd was ripped in a secure way, test&copy style with a log to back it up.' >> "${2}"
+	echo 'It must have some kind of built-in hash or md5 to verify integrity.' >> "${2}"
+	echo '' >> "${2}"
+	echo 'Note: The system that was used to rip only uses one nfo for each rip (which can be ripped to multiple formats), so there is a chance that the files are lossy (ogg vorbis or musepack) and not lossless.' >> "${2}"
+fi
+
+if [ $1 = '--addnotes' ]
+then
+	echo '' >> "${3}"
+	echo 'Notes:' >> "${3}"
+	echo '' >> "${3}"
+	echo "$2" >> "${3}"
+fi

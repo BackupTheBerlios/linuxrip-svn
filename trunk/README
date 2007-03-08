@@ -1,0 +1,104 @@
+Linuxrip 0.095
+
+Version history:
+
+0.01: Initial release
+0.02: Added nfo create capabilities
+0.021: Fixed a few minor bugs, improved file scheme switching method and added a tag switch for the standard file naming scheme(anon is standard)
+0.022: Fixed a small bug in the interactive mode. (genre could not be chosen)
+0.03: Added ripping to single flac file and cue sheet
+0.031: Fixed a few minor bugs
+0.032: Fixed a minor bug
+0.033: Added wavpack replaygain support and added a md5convert script(convert "filename md5" style into "md5 *filename" style, if that doesn't make sense than don't use it)
+0.034: (Back)slashes were not handled properly, fixed that as far as i can tell
+0.040: Added ogg vorbis support
+0.041: First letter of tags choice(capital letter or not). script now asks if you are happy with the changes of album information you made
+0.042: Now shows artist, tracknames, etc after changing them
+0.043: Added the option(default now) to let cdparanoia read the amount of tracks, which doesn't include data tracks by default
+0.044: Fixed a bug in cdparanoia track detection for non-'/dev/cdrom' drives and added an option to add a ripper tag(nfo) and a drive name tag(nfo and xml)
+0.050: Added a switch which allows to manually edit information from cddb (if the person fucked one song up and everything shifts a position, normally that would 
+	be a lot of work). Also added a new filename scheme upon request, since it had spaces in the names it was more work than expected(adding the filescheme was easy, 
+       the needed change to deal with spaces not), so also a bit of code change.
+0.060: Replaced retry system, no longer do two pairs need to match, but just two is enough. Warning is givin at the end if a track needed more than 2 tries.
+       Added a rex(a ripping guide which uses eac, this is made in the same spirit) switch which checks for one or two settings
+0.061: Second filescheme general filename(for xml, m3u, etc files) now defaults to album.extension if bigger than 60 characters(turnover point can be changed).
+       Added support for multiple drives, drive and ripper selection at startup. Also some bugfixes.
+0.062: Fixed some minor bugs and typos.
+0.063: log and nfo are now also embedded as tags for flac and ogg vorbis, the rest not, because i lack a working apev2 command line tag editor
+0.064: added a verbose option for the ripping and fixed a few minor bugs
+0.065: added 'leo' flag, it adds a tag in the folder and in the log.
+	LEO stands for Lossless Exact Original.
+0.070: Added support for flake (a new flac encoder). 
+	Fixed a bug with adding notes.
+	Introduced an automatic system for having words that start with capital letters (minus a list of words that remain lowercase).
+	Improved yes/no question handling, should be error robust now.
+	Added mp3(lame) support for those who have portables which need it. Files are mp3gained for that reason (as opposed to just replaygained).
+	Removed (broken) single flac ripping.
+0.071: Added external settings.
+	Added Makefile and made the script able to be installed into (hopefully) proper places in the filesystem.
+0.080: Ripping and encoding now happens simultaniously.
+	Fixed some minor bugs.
+0.081: Improved cddb system, so multiple results don't default to the first one.
+	Added a lock system, to prevent multiple encodes at the same time.
+	Fixed a bug causing premature replaygaining, if last file was done, but another was not.
+0.082: You can now choose your text editor.
+	Basic support for single flac+cue sheet ripping was added
+0.090: Added support for cue sheets with multiple flac files, please test if it works well.
+	Removed an unnecesary warning message.
+	Added a third filescheme.
+	Added a rename script which is called with "rename <folderlocation>", it uses the 00 - foldername minus [FLAC] and any {*} components for the moment, ignore it if you don't know what it is.
+0.091: Fixed a bug in the cue sheet handling when there are no pregaps (TITLE appeared twice)
+0.092: Nfo file no longer embedded.
+	You can now choose to keep logs files and if you want to embed them (for lossy and/or lossy files)
+	Support for postrips commands excecuted from the rip folder
+0.093: fixed a cddb bug (related to freedb2.org syntax)
+0.094: The tag scanning and modifying component (add capitital letters and stuff like that) has been redone in c++.
+0.095: Hopefully fixed the makefile this time.
+
+
+Note: Please read all the config options at the beginning of the linuxrip file, even the optional settings.
+
+Todo: Make a better readme
+
+Nothing i know of at the moment.
+
+Requirements:
+cdparanoia
+cd-discid
+nano
+wget
+bc
+
+Optional requirements: (you'll need at least one set of encoder and replaygain tool)
+cdda2wav
+flac
+metaflac
+mppenc
+replaygain
+wavpack
+wvgain
+oggenc
+vorbisgain
+lame
+mp3gain
+cdspeed
+cdrdao
+
+Make sure that all commands that you want are in the path and can be called from a random terminal.
+Try the commands in a terminal in case of uncertainty.
+
+Linuxrip can be called with linuxrip from a random position.
+Don't forget to edit the settings in /etc/linuxrip
+
+The o and O options that are set to zero by default are offset corrections.
+They can be found under expert configuration both for cdparanoia and cdda2wav.
+The value can be set by using the offset configuration switch.
+
+Some variables are arrays to be set like this (arrays):
+
+variable[1]='value'
+variable[2]='value'
+
+Notes:
+
+Comment should be directed at the main author madman2003.
