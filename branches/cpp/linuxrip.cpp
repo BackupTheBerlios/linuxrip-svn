@@ -17,11 +17,8 @@
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <string>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include "linuxrip.h"
+#include "cddb.h"
 
 /*
  * This class deals with ripping and storing it as wav.
@@ -172,71 +169,6 @@ class cdio {
 		int WriteToFile() {
 			return sf_write_short(sf, &(readbuf[0]), num_samples);
 		}
-};
-
-class cddb {
-	public:
-		cddb(int *frame_offsets, int numtracks, int disc_length) {
-			conn = cddb_new();
-			if (conn == NULL) {
-				fprintf(stderr, "out of memory, "
-						"unable to create connection structure");
-			}
-
-			/* http acces is preferred */
-			cddb_http_enable(conn);
-			cddb_set_server_port(conn, 80);
-
-			disc = cddb_disc_new();
-			if (disc == NULL) {
-				fprintf(stderr, "out of memory, unable to create disc");
-			} else {
-				cddb_disc_set_length(disc, disc_length);
-				for (i = 0; i < numtracks; i++) {
-					track = cddb_track_new();
-					if (track == NULL) {
-						fprintf(stderr, "out of memory, unable to create track");
-					}
-					cddb_track_set_frame_offset(track, frame_offsets[i]);
-					cddb_disc_add_track(disc, track);
-				}
-			}
-
-			/* (2) execute query command */
-			matches = cddb_query(conn, disc);
-			if (matches == -1) {
-				/* something went wrong, print error */
-				cddb_error_print(cddb_errno(conn));
-			}
-
-			cddb_read(conn, disc);
-		}
-
-		~cddb() {
-			libcddb_shutdown();
-		}
-
-		std::string GetGenre() {
-			return cddb_disc_get_genre(disc);
-		}
-
-		unsigned int GetYear() {
-			return cddb_disc_get_year(disc);
-		}
-
-		std::string GetTitle(int num) {
-			return cddb_track_get_title(cddb_disc_get_track(disc, num));
-		}
-
-		std::string GetArtist() {
-			return cddb_disc_get_artist(disc);
-		}
-
-	private:
-		cddb_disc_t *disc;
-		cddb_track_t *track;
-		cddb_conn_t *conn;
-		int i, matches;
 };
 
 int main() {

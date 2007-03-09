@@ -22,7 +22,9 @@
 #include <cdio/paranoia.h>
 #include <cdio/cd_types.h>
 #include <sndfile.h>
-#include <cddb/cddb.h>
+
+#ifndef _LINUXRIP_H
+#define _LINUXRIP_H
 
 #define NUM_SECTORS 1000
 /* Do NOT change NUM_TRIES, this will do you no good */
@@ -32,3 +34,5 @@
 #define FRAMES_PER_SEC 75
 
 #define MAXLEN 250
+
+#endif /* _LINUXRIP_H */
