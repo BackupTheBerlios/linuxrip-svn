@@ -19,6 +19,7 @@
 
 #include "linuxrip.h"
 #include "cddb.h"
+#include "flac.h"
 
 /*
  * This class deals with ripping and storing it as wav.
@@ -173,6 +174,7 @@ class cdio {
 
 int main() {
 	cdio Ripper;
+	flac Encoder;
 	int tracks = Ripper.GetTracks();
 	std::string filename[tracks+1];
 
@@ -193,6 +195,7 @@ int main() {
 			sprintf(&(tmp[0]), "%02d - %s", i, TrackInfo.GetTitle(i-1).c_str());
 			filename[i] = tmp;
 			Ripper.RipTrack(i, tmp);
+			Encoder.EncodeFile(tmp, tmp);
 		}
 	//}
 	return 0;

@@ -17,3 +17,23 @@
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#ifndef _FLAC_H
+#define _FLAC_H
+
+#include <string>
+#include <FLAC++/encoder.h>
+#include <sndfile.hh>
+
+#define BUFFER_SIZE 4096
+#define MAXLEN 250
+
+class flac : FLAC::Encoder::File {
+	public:
+		void EncodeFile(std::string in_filename, std::string out_filename);
+	private:
+		FLAC__int32 buffer[BUFFER_SIZE];
+		sf_count_t numsamples;
+		char tmp[MAXLEN+4];
+};
+
+#endif /* _FLAC_H */

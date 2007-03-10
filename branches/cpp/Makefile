@@ -3,12 +3,12 @@
 INSTALL = $(PREFIX)/bin/install
 PREFIX = /usr
 
-LIBFLAGS = -lcdio_paranoia -lcdio_cdda -lcdio -lcddb -lsndfile
+LIBFLAGS = -lcdio_paranoia -lcdio_cdda -lcdio -lcddb -lsndfile -lFLAC++ -lFLAC -lm
 LDLFAGS +=
 CXXFLAGS +=
 
-LINUXRIP_O = cddb.o linuxrip.o
-LINUXRIP_H = cddb.h linuxrip.h
+LINUXRIP_O = cddb.o flac.o linuxrip.o
+LINUXRIP_H = cddb.h flac.h linuxrip.h
 
 all: compile
 
