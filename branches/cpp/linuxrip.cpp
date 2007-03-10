@@ -51,13 +51,12 @@ class cdio {
 
 		~cdio() {
 			if (d) cdio_cddap_close(d);
-			if (p) cdio_paranoia_free(p);
-			if (sf) sf_close(sf);
 		}
 
 		bool RipTrack(track_t i_track, std::string filename) {
 			InitWavWriter(filename);
 			p = cdio_paranoia_init(d);
+			if (!p) return false;
 
 			/* Restrict speed */
 			if (cdda_speed_set(d, MAX_SPEED) != DRIVER_OP_SUCCESS) {
@@ -79,8 +78,12 @@ class cdio {
 
 				if (RipAttempt() == 1) {
 					printf("Ripping failed\n");
+					return false;
 				}
 			}
+
+			cdio_paranoia_free(p);
+			return true;
 		}
 
 		int GetTracks() {
@@ -165,6 +168,10 @@ class cdio {
 
 			sf = sf_open(tmp, SFM_WRITE, &fileinfo);
 			if (sf == NULL) return 1;
+		}
+
+		void CloseWavWriter() {
+			if (sf) sf_close(sf);
 		}
 
 		int WriteToFile() {

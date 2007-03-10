@@ -31,6 +31,8 @@ void flac::EncodeFile(std::string in_filename, std::string out_filename) {
 	numsamples = BUFFER_SIZE;
 	while ( numsamples > 0 ) {
 		numsamples = wavread.readf(&(buffer[0]), FRAMES_PER_SEC);
+		for ( int i=0; i<numsamples; i++)
+			printf("sample[%d]=%d\n", i, buffer[i]);
 		process_interleaved(&(buffer[0]), numsamples/2);
 	}
 
