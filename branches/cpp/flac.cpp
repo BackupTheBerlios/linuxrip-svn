@@ -30,11 +30,14 @@ void flac::EncodeFile(std::string in_filename, std::string out_filename) {
 
 	numsamples = BUFFER_SIZE;
 	while ( numsamples > 0 ) {
-		numsamples = wavread.readf(&(buffer[0]), FRAMES_PER_SEC);
+		counter = 0;
+		numsamples = wavread.read(&(buffer[0]), BUFFER_SIZE);
 		for ( int i=0; i<numsamples; i++)
-			printf("sample[%d]=%d\n", i, buffer[i]);
+			if (buffer[i] == 0 ) counter++;
 		process_interleaved(&(buffer[0]), numsamples/2);
+		printf("null samples=%d out of %d samples\n", counter, numsamples);
 	}
 
+	finish();
 	printf("Encoding of file: %s.wav is done\n", in_filename.c_str());
 }
