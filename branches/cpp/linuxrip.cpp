@@ -50,9 +50,9 @@ class cdio {
 		}
 
 		~cdio() {
-			cdio_cddap_close(d);
-			cdio_paranoia_free(p);
-			sf_close(sf);
+			if (d) cdio_cddap_close(d);
+			if (p) cdio_paranoia_free(p);
+			if (sf) sf_close(sf);
 		}
 
 		bool RipTrack(track_t i_track, std::string filename) {
