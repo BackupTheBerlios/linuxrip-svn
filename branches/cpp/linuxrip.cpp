@@ -39,12 +39,12 @@ class cdio {
 			}
 
 			/* Don't need a list of CD's with CD-DA's any more. */
-			cdio_free_device_list(ppsz_cd_drives);
+			if (ppsz_cd_drives) cdio_free_device_list(ppsz_cd_drives);
 
 			/* We'll set for verbose paranoia messages. */
-			cdio_cddap_verbose_set(d, CDDA_MESSAGE_PRINTIT, CDDA_MESSAGE_PRINTIT);
+			if (d) cdio_cddap_verbose_set(d, CDDA_MESSAGE_PRINTIT, CDDA_MESSAGE_PRINTIT);
 
-			if ( 0 != cdio_cddap_open(d) ) {
+			if ( d && cdio_cddap_open(d) != 0 ) {
 				printf("Unable to open disc.\n");
 			}
 		}
