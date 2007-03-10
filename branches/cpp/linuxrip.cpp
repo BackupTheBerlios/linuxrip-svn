@@ -82,6 +82,7 @@ class cdio {
 				}
 			}
 
+			CloseWavWriter();
 			cdio_paranoia_free(p);
 			return true;
 		}
