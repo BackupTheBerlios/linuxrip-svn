@@ -24,17 +24,18 @@
 #include <FLAC++/encoder.h>
 #include <sndfile.hh>
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 88200
+#define SAMPLE_RATE 44100
+#define NUM_FRAMES 75
 #define MAXLEN 250
 
 class flac : FLAC::Encoder::File {
 	public:
 		void EncodeFile(std::string in_filename, std::string out_filename);
 	private:
-		FLAC__int32 buffer[BUFFER_SIZE];
-		sf_count_t numsamples;
+		int buffer[BUFFER_SIZE];
+		sf_count_t num_elements;
 		char tmp[MAXLEN+4];
-		int counter;
 };
 
 #endif /* _FLAC_H */
