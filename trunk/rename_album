@@ -1,7 +1,7 @@
 #! /bin/bash
 #
-#  rename, automaticly renames an album
-# Copyright (C) 2006  madman2003 (madman2003@gmail.com)
+# rename, automaticly renames an album
+# Copyright (C) 2007  madman2003 (madman2003@gmail.com)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-version='0.03'
+version='0.04'
 tmpfile='/tmp/rename.tmp'
 
 if [[ ${1} == '--help' ]]; then
@@ -39,7 +39,7 @@ setgeneralfilename() {
 	# strip folder names and turn them into something usefull
 	tempvar1=$(echo "${folder}" | rev | cut -c 1 | sed s^/^^ | rev)
 	tempvar2=$(echo "${folder}" | rev | cut -c 2- | rev)
-	generalfilename="00 - $(echo "${tempvar2}${tempvar1}" | awk -F / '{print $NF}' | sed s^" {.*}"^^ | sed s^" [[]FLAC[]]"^^)"
+	generalfilename="00 - $(echo "${tempvar2}${tempvar1}" | awk -F / '{print $NF}' | sed s^" {.*}"^^ | sed s^" [[]FLAC[]]"^^ | sed s^" [[]WAVPACK[]]"^^)"
 }
 
 checkfiles() {
@@ -64,6 +64,12 @@ checkfiles() {
 		flac )
 			echo "Adding ${files[$j]} to flac list."
 			flacfiles=( "${flacfiles[@]}" "${files[$j]}" )
+			file_choice='flac'
+		;;
+		wv )
+			echo "Adding ${files[$j]} to wavpack list."
+			flacfiles=( "${wavpackfiles[@]}" "${files[$j]}" )
+			file_choice='wavpack'
 		;;
 		artwork | art | scans | covers )
 			echo "I do not touch artwork."
@@ -89,14 +95,22 @@ checkfiles() {
 doreplaygain() {
 	currentpath="$(pwd)"
 	cd "${folder}"
-	metaflac --add-replay-gain "${flacfiles[@]}"
+	if (${file_choice} == 'flac' ); then
+		metaflac --add-replay-gain "${flacfiles[@]}"
+	elif (${file_choice} == 'wavpack' ); then
+		wvgain -aq "${wavpackfiles[@]}"
+	fi
 	cd "${currentpath}"
 }
 
 createmd5() {
 	currentpath="$(pwd)"
 	cd "${folder}"
-	md5sum -b "${flacfiles[@]}" > "${folder}/${generalfilename}.md5"
+	if (${file_choice} == 'flac' ); then
+		md5sum -b "${flacfiles[@]}" > "${folder}/${generalfilename}.md5"
+	elif (${file_choice} == 'wavpack' ); then
+		md5sum -b "${wavpackfiles[@]}" > "${folder}/${generalfilename}.md5"
+	fi
 	cd "${currentpath}"
 }
 
