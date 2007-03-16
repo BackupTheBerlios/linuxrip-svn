@@ -98,7 +98,7 @@ doreplaygain() {
 	if [ ${file_choice} == 'flac' ]; then
 		metaflac --add-replay-gain "${flacfiles[@]}"
 	elif [ ${file_choice} == 'wavpack' ]; then
-		wvgain -aq "${wavpackfiles[@]}"
+		wvgain -a "${wavpackfiles[@]}"
 	fi
 	cd "${currentpath}"
 }
