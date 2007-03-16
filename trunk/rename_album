@@ -68,7 +68,7 @@ checkfiles() {
 		;;
 		wv )
 			echo "Adding ${files[$j]} to wavpack list."
-			flacfiles=( "${wavpackfiles[@]}" "${files[$j]}" )
+			wavpackfiles=( "${wavpackfiles[@]}" "${files[$j]}" )
 			file_choice='wavpack'
 		;;
 		artwork | art | scans | covers )
