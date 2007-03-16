@@ -95,9 +95,9 @@ checkfiles() {
 doreplaygain() {
 	currentpath="$(pwd)"
 	cd "${folder}"
-	if (${file_choice} == 'flac' ); then
+	if [ ${file_choice} == 'flac' ]; then
 		metaflac --add-replay-gain "${flacfiles[@]}"
-	elif (${file_choice} == 'wavpack' ); then
+	elif [ ${file_choice} == 'wavpack' ]; then
 		wvgain -aq "${wavpackfiles[@]}"
 	fi
 	cd "${currentpath}"
@@ -106,9 +106,9 @@ doreplaygain() {
 createmd5() {
 	currentpath="$(pwd)"
 	cd "${folder}"
-	if (${file_choice} == 'flac' ); then
+	if [ ${file_choice} == 'flac' ]; then
 		md5sum -b "${flacfiles[@]}" > "${folder}/${generalfilename}.md5"
-	elif (${file_choice} == 'wavpack' ); then
+	elif [ ${file_choice} == 'wavpack' ]; then
 		md5sum -b "${wavpackfiles[@]}" > "${folder}/${generalfilename}.md5"
 	fi
 	cd "${currentpath}"
